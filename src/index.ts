@@ -17,5 +17,3 @@ export * from './core';
 export * from './authenticated';
 
 export * from './http/HttpOptionsService';
-
-export * from './services';
