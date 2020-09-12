@@ -1,6 +1,6 @@
 {
   "name": "angularx",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "angularx",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
