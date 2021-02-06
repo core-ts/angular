@@ -1,6 +1,6 @@
-import {Attribute, Format, MetaModel, Model, Type} from './core';
+import {Attribute, Format, Metadata, MetaModel, Type} from './core';
 
-export function build(model: Model): MetaModel {
+export function build(model: Metadata): MetaModel {
   if (model && !model.source) {
     model.source = model.name;
   }

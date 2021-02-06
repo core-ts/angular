@@ -1,4 +1,4 @@
-import {MetaModel, ResourceService, Type} from './core';
+import {Metadata, MetaModel, ResourceService, Type} from './core';
 import {build as build2} from './metadata';
 
 interface ErrorMessage {
@@ -20,12 +20,6 @@ export interface ResultInfo<T> {
   errors?: ErrorMessage[];
   value?: T;
   message?: string;
-}
-
-export interface Metadata {
-  name?: string;
-  attributes: any;
-  source?: string;
 }
 
 // tslint:disable-next-line:class-name

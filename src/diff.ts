@@ -7,7 +7,7 @@ import {getErrorFunc, getLoadingFunc, getMsgFunc, getResource} from './input';
 
 export interface DiffParameter {
   resource: ResourceService;
-  showMessage: (msg: string) => void;
+  showMessage: (msg: string, option?: string) => void;
   showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
   loading?: LoadingService;
 }
@@ -36,7 +36,7 @@ export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<
 export class BaseDiffApprComponent<T, ID> {
   constructor(protected service: DiffApprService<T, ID>,
       param: ResourceService|DiffParameter,
-      showMessage?: (msg: string) => void,
+      showMessage?: (msg: string, option?: string) => void,
       showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
       loading?: LoadingService) {
     this.resourceService = getResource(param);
@@ -44,7 +44,6 @@ export class BaseDiffApprComponent<T, ID> {
     this.loading = getLoadingFunc(param, loading);
     this.showError = getErrorFunc(param, showError);
     this.showMessage = getMsgFunc(param, showMessage);
-    this.showMessage = this.showMessage.bind(this);
     this.back = this.back.bind(this);
     const x: any = {};
     this.origin = x;
@@ -57,7 +56,7 @@ export class BaseDiffApprComponent<T, ID> {
     this.load = this.load.bind(this);
     this.handleNotFound = this.handleNotFound.bind(this);
   }
-  protected showMessage: (msg: string) => void;
+  protected showMessage: (msg: string, option?: string) => void;
   protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void;
   protected resourceService: ResourceService;
   protected loading?: LoadingService;
@@ -197,7 +196,7 @@ export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> imple
   constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute,
     service: DiffApprService<T, ID>,
     param: ResourceService|DiffParameter,
-    showMessage?: (msg: string) => void,
+    showMessage?: (msg: string, option?: string) => void,
     showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
     loading?: LoadingService) {
     super(service, param, showMessage, showError, loading);

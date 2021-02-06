@@ -95,23 +95,23 @@ export interface ErrorMessage {
   message?: string;
 }
 export interface UIService {
-  getValue(ctrl: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean;
-  decodeFromForm(form: HTMLFormElement, locale: Locale, currencyCode: string): any;
+  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean;
+  decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string): any;
 
-  validateForm(form: HTMLFormElement, locale: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
+  validateForm(form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
   removeFormError(form: HTMLFormElement): void;
-  removeErrorMessage(ctrl: HTMLInputElement): void;
+  removeError(el: HTMLInputElement): void;
   showFormError(form: HTMLFormElement, errors: ErrorMessage[], focusFirst?: boolean): ErrorMessage[];
   buildErrorMessage(errors: ErrorMessage[]): string;
 
-  initMaterial(form: HTMLFormElement): void;
+  registerEvents?(form: HTMLFormElement): void;
 }
 export interface AlertService {
   confirm(msg: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void): void;
   alertError(msg: string, header?: string, detail?: string, callback?: () => void): void;
 }
 
-export interface Model {
+export interface Metadata {
   name?: string;
   attributes: Attributes;
   source?: string;
@@ -127,12 +127,12 @@ export interface Attribute {
   key?: boolean;
   version?: boolean;
   ignored?: boolean;
-  typeof?: Model;
+  typeof?: Metadata;
   scale?: number;
   noformat?: boolean;
 }
 export interface MetaModel {
-  model: Model;
+  model: Metadata;
   attributeName?: string;
   keys?: string[];
   dateFields?: string[];
@@ -163,7 +163,7 @@ export function error(err: any, r: ResourceService, alertError: (msg: string, he
     alertError(msg, title);
   }
 }
-export function getModelName(form: any): string {
+export function getModelName(form: HTMLFormElement): string {
   if (form) {
     const a = form.getAttribute('model-name');
     if (a && a.length > 0) {

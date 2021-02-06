@@ -33,7 +33,7 @@ export class resources {
 const _rd = '/Date(';
 const _rn = /-?\d+/;
 
-function toDate(v: any): Date {
+function toDate(v: string|number|Date): Date {
   if (!v || v === '') {
     return null;
   }
@@ -48,7 +48,7 @@ function toDate(v: any): Date {
     const d = parseInt(m[0], null);
     return new Date(d);
   } else {
-    if (isNaN(v)) {
+    if (isNaN(v as any)) {
       return new Date(v);
     } else {
       const d = parseInt(v, null);

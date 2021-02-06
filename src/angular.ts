@@ -67,8 +67,8 @@ export function initForm(form: HTMLFormElement, initMat?: (f: HTMLFormElement) =
   return form;
 }
 
-export function buildFromUrl<T>(): T {
-  return buildParameters<T>(window.location.search);
+export function buildFromUrl<S>(): S {
+  return buildParameters<S>(window.location.search);
 }
 export function buildParameters<T>(url: string): T {
   let urlSearch = url;

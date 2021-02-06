@@ -30,9 +30,9 @@ export function getLoadingFunc(p: ResourceService|LoadingInput, ui0?: LoadingSer
   return (p as any).loading;
 }
 interface ShowMessageInput {
-  showMessage: (msg: string) => void;
+  showMessage: (msg: string, option?: string) => void;
 }
-export function getMsgFunc(p: ResourceService|ShowMessageInput, showMsg?: (msg: string) => void): (msg: string) => void {
+export function getMsgFunc(p: ResourceService|ShowMessageInput, showMsg?: (msg: string, option?: string) => void): (msg: string) => void {
   if (showMsg) {
     return showMsg;
   }
@@ -48,7 +48,7 @@ export function getConfirmFunc(p: ResourceService|ConfirmInput, cf?: (m2: string
   return (p as any).confirm;
 }
 interface GetLocaleInput {
-  getLocale?: () => Locale;
+  getLocale?: (profile?: string) => Locale;
 }
 export function getLocaleFunc(p: ResourceService|GetLocaleInput, getLoc?: () => Locale): () => Locale {
   if (getLoc) {
