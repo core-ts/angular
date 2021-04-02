@@ -4,10 +4,10 @@ import {clone, equalAll, makeDiff, setAll, setValue, trim} from 'reflectx';
 import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResults, getDisplayFields, handleSortEvent, initSearchable, mergeSearchModel, more, optimizeSearchModel, reset, showResults} from 'search-utilities';
 import {buildFromUrl, buildId, initElement} from './angular';
 import {error, getModelName, LoadingService, Locale, message, Metadata, MetaModel, ResourceService, StringMap, UIService} from './core';
-import {build, buildMessageFromStatusCode, createModel, handleVersion, ResultInfo, Status} from './edit';
+import {build, buildMessageFromStatusCode, createModel, handleVersion, ResultInfo} from './edit';
 import {format, json} from './formatter';
 import {focusFirstError, readOnly} from './formutil';
-import {getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
+import {getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
 
 export const enLocale = {
   'id': 'en-US',
@@ -126,7 +126,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
         if (data && data.status === 404) {
           this.handleNotFound(this.form);
         } else {
-          error(err, this.resourceService, this.showError);
+          error(err, this.resourceService.value, this.showError);
         }
       } finally {
         this.running = false;
@@ -140,7 +140,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
     if (form) {
       readOnly(form);
     }
-    const msg = message(this.resourceService, 'error_not_found', 'error');
+    const msg = message(this.resourceService.value, 'error_not_found', 'error');
     this.showError(msg.message, msg.title);
   }
   protected getModelName(): string {
@@ -430,7 +430,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         if (data && data.status === 404) {
           com.handleNotFound(com.form);
         } else {
-          error(err, this.resourceService, this.showError);
+          error(err, this.resourceService.value, this.showError);
         }
       } finally {
         com.running = false;
@@ -456,7 +456,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.showModel(model);
   }
   protected handleNotFound(form?: HTMLFormElement): void {
-    const msg = message(this.resourceService, 'error_not_found', 'error');
+    const msg = message(this.resourceService.value, 'error_not_found', 'error');
     if (this.form) {
       readOnly(form);
     }
@@ -543,11 +543,11 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   onSave(isBack?: boolean) {
     const r = this.resourceService;
     if (this.newMode && this.addable !== true) {
-      const msg = message(r, 'error_permission_add', 'error_permission');
+      const msg = message(r.value, 'error_permission_add', 'error_permission');
       this.showError(msg.message, msg.title);
       return;
     } else if (!this.newMode && this.editable !== true) {
-      const msg = message(r, 'error_permission_edit', 'error_permission');
+      const msg = message(r.value, 'error_permission_edit', 'error_permission');
       this.showError(msg.message, msg.title);
       return;
     } else {
@@ -563,7 +563,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
           this.showMessage(r.value('msg_no_change'));
         } else {
           com.validate(obj, () => {
-            const msg = message(r, 'msg_confirm_save', 'confirm', 'yes', 'no');
+            const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
             this.confirm(msg.message, msg.title, () => {
               com.save(obj, diffObj, isBack);
             }, msg.no, msg.yes);
@@ -571,7 +571,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         }
       } else {
         com.validate(obj, () => {
-          const msg = message(r, 'msg_confirm_save', 'confirm', 'yes', 'no');
+          const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
           this.confirm(msg.message, msg.title, () => {
             com.save(obj, obj, isBack);
           }, msg.no, msg.yes);
@@ -616,7 +616,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         com.postSave(result, isBackO);
       }
     } catch (err) {
-      error(err, this.resourceService, this.showError);
+      error(err, this.resourceService.value, this.showError);
     }
   }
   protected succeed(msg: string, backOnSave: boolean, result?: ResultInfo<T>): void {
@@ -681,14 +681,14 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       }
     } else {
       const result: ResultInfo<T> = x;
-      if (result.status === Status.Success) {
+      if (result.status === 1) {
         this.succeed(successMsg, backOnSave, result);
-      } else if (result.status === Status.Error) {
+      } else if (result.status === 4) {
         this.fail(result);
-      } else if (newMod && result.status === Status.DuplicateKey) {
+      } else if (newMod && result.status === 0) {
         this.handleDuplicateKey(result);
       } else {
-        const msg = buildMessageFromStatusCode(result.status, this.resourceService);
+        const msg = buildMessageFromStatusCode(result.status, this.resourceService.value);
         const r = this.resourceService;
         const title = r.value('error');
         if (msg && msg.length > 0) {
@@ -702,7 +702,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     }
   }
   protected handleDuplicateKey(result?: ResultInfo<T>): void {
-    const msg = message(this.resourceService, 'error_duplicate_key', 'error');
+    const msg = message(this.resourceService.value, 'error_duplicate_key', 'error');
     this.showError(msg.message, msg.title);
   }
 }
@@ -729,16 +729,17 @@ export interface SearchParameter {
   resource: ResourceService;
   showMessage: (msg: string, option?: string) => void;
   showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
-  getLocale?: (profile?: string) => Locale;
   ui?: UIService;
+  getLocale?: (profile?: string) => Locale;
   loading?: LoadingService;
+  auto?: boolean;
 }
 export interface LocaleFormatter<T> {
   format(obj: T, locale: Locale): T;
 }
 export interface SearchModel {
   page?: number;
-  limit: number;
+  limit?: number;
   firstLimit?: number;
   fields?: string[];
   sort?: string;
@@ -832,7 +833,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   sortTarget: HTMLElement; // HTML element
 
   keys: string[];
-  formatter: LocaleFormatter<T>;
+  format?: (obj: T, locale: Locale) => T;
   displayFields: string[];
   initDisplayFields: boolean;
   sequenceNo = 'sequenceNo';
@@ -991,7 +992,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
         this.showResults(se, result);
       }
     } catch (err) {
-      error(err, this.resourceService, this.showError);
+      error(err, this.resourceService.value, this.showError);
     } finally {
       this.running = false;
       if (this.loading) {
@@ -1017,7 +1018,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   }
   searchError(response: any): void {
     this.pageIndex = this.tmpPageIndex;
-    error(response, this.resourceService, this.showError);
+    error(response, this.resourceService.value, this.showError);
   }
   showResults(s: S, sr: SearchResult<T>): void {
     const com = this;
@@ -1027,7 +1028,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       if (this.getLocale) {
         locale = this.getLocale();
       }
-      formatResults(results, this.formatter, locale, this.sequenceNo, this.pageIndex, this.pageSize, this.initPageSize);
+      formatResults(results, this.pageIndex, this.pageSize, this.initPageSize, this.sequenceNo, this.format, locale);
     }
     const appendMode = com.appendMode;
     showResults(s, sr, com);
@@ -1119,9 +1120,7 @@ export class SearchComponent<T, S extends SearchModel> extends BaseSearchCompone
       loading?: LoadingService,
       autoSearch?: boolean) {
     super(sv, param, showMessage, showError, getLocale, uis, loading);
-    if (autoSearch === false) {
-      this.autoSearch = autoSearch;
-    }
+    this.autoSearch = getAutoSearch(param);
     this.ngOnInit = this.ngOnInit.bind(this);
   }
   protected autoSearch = true;

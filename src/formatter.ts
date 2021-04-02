@@ -1,34 +1,4 @@
-import {Attribute, Format, Locale, MetaModel} from './core';
-
-export interface Currency {
-  currencyCode?: string;
-  decimalDigits: number;
-  currencySymbol: string;
-}
-
-// tslint:disable-next-line:class-name
-export class resources {
-  private static _preg = / |\-|\.|\(|\)/g;
-  static format1 = / |,|\$|€|£|¥|'|٬|،| /g;
-  static format2 = / |\.|\$|€|£|¥|'|٬|،| /g;
-  static currency: (currencyCode: string) => Currency;
-  static formatNumber: (value: number, scale: number, locale: Locale) => string;
-  static formatPhone: (phone: string) => string;
-  static formatFax: (fax: string) => string;
-
-  static removePhoneFormat(phone: string): string {
-    if (phone) {
-      return phone.replace(resources._preg, '');
-    }
-    return phone;
-  }
-  static removeFaxFormat(fax: string): string {
-    if (fax) {
-      return fax.replace(resources._preg, '');
-    }
-    return fax;
-  }
-}
+import {Attribute, Locale, MetaModel, resources} from './core';
 
 const _rd = '/Date(';
 const _rn = /-?\d+/;
@@ -128,7 +98,7 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
           }
           if (v.indexOf('%') >= 0) {
             const attr: Attribute = m.model.attributes[p];
-            if (attr.format === Format.Percentage) {
+            if (attr.format === 'percentage') {
               v = v.replace('%', '');
             }
           }
@@ -144,7 +114,7 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
           v = v.replace(r1, '');
           if (v.indexOf('%') >= 0) {
             const attr: Attribute = m.model.attributes[p];
-            if (attr.format === Format.Percentage) {
+            if (attr.format === 'percentage') {
               v = v.replace('%', '');
             }
           }
@@ -259,7 +229,7 @@ export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string, inclu
           const attr: Attribute = m.model.attributes[p];
           if (attr && !attr.noformat && !attr.key && !attr.version) {
             let z = resources.formatNumber(v, attr.scale, loc);
-            if (attr.format === Format.Percentage) {
+            if (attr.format === 'percentage') {
               z = z + '%';
             }
             obj[p] = z;

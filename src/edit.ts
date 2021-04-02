@@ -1,4 +1,4 @@
-import {Metadata, MetaModel, ResourceService, Type} from './core';
+import {Metadata, MetaModel, resources} from './core';
 import {build as build2} from './metadata';
 
 interface ErrorMessage {
@@ -7,14 +7,7 @@ interface ErrorMessage {
   param?: string | number | Date;
   message?: string;
 }
-export enum Status {
-  DuplicateKey = 0,
-  NotFound = 0,
-  Success = 1,
-  VersionError = 2,
-  Error = 4,
-  DataCorrupt = 8
-}
+export type Status = 0 | 1 | 2 | 4 | 8;
 export interface ResultInfo<T> {
   status: Status;
   errors?: ErrorMessage[];
@@ -22,18 +15,12 @@ export interface ResultInfo<T> {
   message?: string;
 }
 
-// tslint:disable-next-line:class-name
-export class resource {
-  static _cache: any = {};
-  static cache = true;
-}
-
 export function build(model: Metadata): MetaModel {
-  if (resource.cache) {
-    let meta: MetaModel = resource._cache[model.name];
+  if (resources.cache) {
+    let meta: MetaModel = resources._cache[model.name];
     if (!meta) {
       meta = build2(model);
-      resource._cache[model.name] = meta;
+      resources._cache[model.name] = meta;
     }
     return meta;
   } else {
@@ -41,39 +28,42 @@ export function build(model: Metadata): MetaModel {
   }
 }
 
-export function createModel<T>(model: Metadata): T {
+export function createModel<T>(model?: Metadata): T {
   const obj: any = {};
+  if (!model) {
+    return obj;
+  }
   const attrs = Object.keys(model.attributes);
   for (const k of attrs) {
     const attr = model.attributes[k];
     switch (attr.type) {
-      case Type.String:
-      case Type.Text:
+      case 'string':
+      case 'text':
         obj[attr.name] = '';
         break;
-      case Type.Integer:
-      case Type.Number:
+      case 'integer':
+      case 'number':
         obj[attr.name] = 0;
         break;
-      case Type.Array:
+      case 'array':
         obj[attr.name] = [];
         break;
-      case Type.Boolean:
+      case 'boolean':
         obj[attr.name] = false;
         break;
-      case Type.Date:
+      case 'date':
         obj[attr.name] = new Date();
         break;
-      case Type.Object:
+      case 'object':
         if (attr.typeof) {
-          const object = this.createModel(attr.typeof);
+          const object = createModel(attr.typeof);
           obj[attr.name] = object;
           break;
         } else {
           obj[attr.name] = {};
           break;
         }
-      case Type.ObjectId:
+      case 'ObjectId':
         obj[attr.name] = null;
         break;
       default:
@@ -84,13 +74,13 @@ export function createModel<T>(model: Metadata): T {
   return obj;
 }
 
-export function buildMessageFromStatusCode(status: Status, r: ResourceService): string {
-  if (status === Status.DuplicateKey) {
-    return r.value('error_duplicate_key');
-  } else if (status === Status.VersionError) { // Below message for update only, not for add
-    return r.value('error_version');
-  } else if (status === Status.DataCorrupt) {
-    return r.value('error_data_corrupt');
+export function buildMessageFromStatusCode(status: Status, gv: (k: string) => string): string {
+  if (status === 0) {
+    return gv('error_duplicate_key');
+  } else if (status === 2) { // Below message for update only, not for add
+    return gv('error_version');
+  } else if (status === 8) {
+    return gv('error_data_corrupt');
   } else {
     return '';
   }

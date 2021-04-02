@@ -11,6 +11,16 @@ export function getResource(p: ResourceService|ResourceInput): ResourceService {
     return x.resource;
   }
 }
+interface ShortSearchParameter {
+  auto?: boolean;
+}
+export function getAutoSearch(p: ResourceService|ShortSearchParameter): boolean {
+  const x: any = p;
+  if (x.value && x.format && typeof x.value === 'function') {
+    return true;
+  }
+  return x.auto;
+}
 interface UIInput {
   ui?: UIService;
 }

@@ -96,7 +96,7 @@ export class BaseDiffApprComponent<T, ID> {
         if (data && data.status === 404) {
           this.handleNotFound(this.form);
         } else {
-          error(err, this.resourceService, this.showError);
+          error(err, this.resourceService.value, this.showError);
         }
       } finally {
         this.running = false;
@@ -181,7 +181,7 @@ export class BaseDiffApprComponent<T, ID> {
         this.showMessage(r.value('msg_approve_version_error'));
       }
     } else {
-      error(err, r, this.showError);
+      error(err, r.value, this.showError);
     }
   }
   protected end() {

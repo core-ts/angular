@@ -1,4 +1,4 @@
-import {Attribute, Format, Metadata, MetaModel, Type} from './core';
+import {Attribute, Metadata, MetaModel, resources} from './core';
 
 export function build(model: Metadata): MetaModel {
   if (model && !model.source) {
@@ -29,12 +29,12 @@ export function build(model: Metadata): MetaModel {
       }
 
       switch (attr.type) {
-        case Type.String: {
+        case 'string': {
           switch (attr.format) {
-            case Format.Phone:
+            case 'phone':
               phoneFields.push(attr.name);
               break;
-            case Format.Fax:
+            case 'fax':
               faxFields.push(attr.name);
               break;
             default:
@@ -42,9 +42,9 @@ export function build(model: Metadata): MetaModel {
           }
           break;
         }
-        case Type.Number: {
+        case 'number': {
           switch (attr.format) {
-            case Format.Currency:
+            case 'currency':
               currencyFields.push(attr.name);
               break;
             /*
@@ -58,15 +58,21 @@ export function build(model: Metadata): MetaModel {
           }
           break;
         }
-        case Type.Integer: {
+        case 'integer': {
           integerFields.push(attr.name);
           break;
         }
-        case Type.Date: {
+        case 'date': {
+          if (resources.ignoreDate) {
+            dateFields.push(attr.name);
+          }
+          break;
+        }
+        case 'datetime': {
           dateFields.push(attr.name);
           break;
         }
-        case Type.Object: {
+        case 'object': {
           if (attr.typeof) {
             const x = build(attr.typeof);
             x.attributeName = key;
@@ -74,7 +80,7 @@ export function build(model: Metadata): MetaModel {
           }
           break;
         }
-        case Type.Array: {
+        case 'array': {
           if (attr.typeof) {
             const y = build(attr.typeof);
             y.attributeName = key;

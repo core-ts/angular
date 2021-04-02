@@ -1,25 +1,42 @@
-export enum Type {
-  ObjectId = 'ObjectId',
-  Date = 'date',
-  Boolean = 'boolean',
 
-  Number = 'number',
-  Integer = 'integer',
-  String = 'string',
-  Text = 'text',
-
-  Object = 'object',
-  Array = 'array',
-  Primitives =  'primitives',
-  Binary = 'binary'
+// tslint:disable-next-line:class-name
+export interface Currency {
+  currencyCode?: string;
+  decimalDigits: number;
+  currencySymbol: string;
 }
-export enum Format {
-  Percentage = 'percentage',
-  Currency = 'currency',
 
-  Phone = 'phone',
-  Fax = 'fax',
+// tslint:disable-next-line:class-name
+export class resources {
+  static _cache: any = {};
+  static cache = true;
+  static ignoreDate?: boolean;
+  private static _preg = / |\-|\.|\(|\)/g;
+  static format1 = / |,|\$|€|£|¥|'|٬|،| /g;
+  static format2 = / |\.|\$|€|£|¥|'|٬|،| /g;
+  static currency: (currencyCode: string) => Currency;
+  static formatNumber: (value: number, scale: number, locale: Locale) => string;
+  static formatPhone: (phone: string) => string;
+  static formatFax: (fax: string) => string;
+
+  static removePhoneFormat(phone: string): string {
+    if (phone) {
+      return phone.replace(resources._preg, '');
+    }
+    return phone;
+  }
+  static removeFaxFormat(fax: string): string {
+    if (fax) {
+      return fax.replace(resources._preg, '');
+    }
+    return fax;
+  }
 }
+
+export type Type = 'ObjectId' | 'date' | 'datetime' | 'time'
+    | 'boolean' | 'number' | 'integer' | 'string' | 'text'
+    | 'object' | 'array' | 'primitives' | 'binary';
+export type Format = 'currency' | 'percentage' | 'email' | 'url' | 'phone' | 'fax' | 'ipv4' | 'ipv6';
 
 export interface StringMap {
   [key: string]: string;
@@ -36,35 +53,34 @@ export interface Message {
   no?: string;
 }
 
-export function message(r: ResourceService, msg: string, title?: string, yes?: string, no?: string): Message {
-  const m2 = (msg && msg.length > 0 ? r.value(msg) : '');
+export function message(gv: (key: string) => string, msg: string, title?: string, yes?: string, no?: string): Message {
+  const m2 = (msg && msg.length > 0 ? gv(msg) : '');
   const m: Message = {
     message: m2
   };
   if (title && title.length > 0) {
-    m.title = r.value(title);
+    m.title = gv(title);
   }
   if (yes && yes.length > 0) {
-    m.yes = r.value(yes);
+    m.yes = gv(yes);
   }
   if (no && no.length > 0) {
-    m.no = r.value(no);
+    m.no = gv(no);
   }
   return m;
 }
-
-export function messageByHttpStatus(status: number, r: ResourceService): string {
-  let msg = r.value('error_internal');
+export function messageByHttpStatus(status: number, gv: (key: string) => string): string {
+  let msg = gv('error_internal');
   if (status === 401) {
-    msg = r.value('error_unauthorized');
+    msg = gv('error_unauthorized');
   } else if (status === 403) {
-    msg = r.value('error_forbidden');
+    msg = gv('error_forbidden');
   } else if (status === 404) {
-    msg = r.value('error_not_found');
+    msg = gv('error_not_found');
   } else if (status === 410) {
-    msg = r.value('error_gone');
+    msg = gv('error_gone');
   } else if (status === 503) {
-    msg = r.value('error_service_unavailable');
+    msg = gv('error_service_unavailable');
   }
   return msg;
 }
@@ -145,22 +161,22 @@ export interface MetaModel {
   arrayFields?: MetaModel[];
   version?: string;
 }
-export function error(err: any, r: ResourceService, alertError: (msg: string, header?: string, detail?: string, callback?: () => void) => void): void {
-  const title = r.value('error');
-  let msg = r.value('error_internal');
+export function error(err: any, gv: (key: string) => string, ae: (msg: string, header?: string, detail?: string, callback?: () => void) => void) {
+  const title = gv('error');
+  let msg = gv('error_internal');
   if (!err) {
-    alertError(msg, title);
+    ae(msg, title);
     return;
   }
   const data = err && err.response ? err.response : err;
   if (data) {
     const status = data.status;
     if (status && !isNaN(status)) {
-      msg = messageByHttpStatus(status, r);
+      msg = messageByHttpStatus(status, gv);
     }
-    alertError(msg, title);
+    ae(msg, title);
   } else {
-    alertError(msg, title);
+    ae(msg, title);
   }
 }
 export function getModelName(form: HTMLFormElement): string {
