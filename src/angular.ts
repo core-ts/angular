@@ -3,7 +3,7 @@ import {ViewContainerRef} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {focusFirstElement} from './formutil';
 
-export function getId<ID>(id: ID, keys: string[], route: ActivatedRoute): ID {
+export function getId<ID>(route: ActivatedRoute, keys?: string[], id?: ID): ID {
   if (id) {
     return id;
   } else {

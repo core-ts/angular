@@ -1,4 +1,4 @@
-import {Metadata, MetaModel, resources} from './core';
+import {getString, Metadata, MetaModel, resources, StringMap} from './core';
 import {build as build2} from './metadata';
 
 interface ErrorMessage {
@@ -74,13 +74,13 @@ export function createModel<T>(model?: Metadata): T {
   return obj;
 }
 
-export function buildMessageFromStatusCode(status: Status, gv: (k: string) => string): string {
+export function buildMessageFromStatusCode(status: Status, gv: StringMap|((k: string) => string)): string {
   if (status === 0) {
-    return gv('error_duplicate_key');
+    return getString('error_duplicate_key', gv);
   } else if (status === 2) { // Below message for update only, not for add
-    return gv('error_version');
+    return getString('error_version', gv);
   } else if (status === 8) {
-    return gv('error_data_corrupt');
+    return getString('error_data_corrupt', gv);
   } else {
     return '';
   }

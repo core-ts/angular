@@ -725,6 +725,13 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> implements On
   }
 }
 
+export interface SearchPermission {
+  viewable?: boolean;
+  addable?: boolean;
+  editable?: boolean;
+  deletable?: boolean;
+  approvable?: boolean;
+}
 export interface SearchParameter {
   resource: ResourceService;
   showMessage: (msg: string, option?: string) => void;
@@ -744,13 +751,13 @@ export interface SearchModel {
   fields?: string[];
   sort?: string;
 
-  keyword?: string;
+  q?: string;
   excluding?: any;
   refId?: string|number;
 }
 export interface SearchResult<T> {
   total?: number;
-  results: T[];
+  list: T[];
   last?: boolean;
 }
 export interface SearchService<T, S extends SearchModel> {
@@ -766,7 +773,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       uis?: UIService,
       loading?: LoadingService) {
     super(getResource(param), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading));
-    this.state = {} as any;
+    this.model = {} as any;
 
     if (sv) {
       if (typeof sv === 'function') {
@@ -842,20 +849,21 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   loadTime: Date;
   loadPage = 1;
 
-  protected state: S;
+  protected model: S;
   private list: T[];
-  excluding: any;
+  excluding: string[]|number[];
   hideFilter: boolean;
+  ignoreUrlParam: boolean;
 
   pageMaxSize = 7;
   pageSizes: number[] = [10, 20, 40, 60, 100, 200, 400, 1000];
 
-  chkAll: HTMLInputElement;
+  chkAll?: HTMLInputElement;
   viewable = true;
   addable = true;
   editable = true;
-  approvable = true;
-  deletable = true;
+  approvable?: boolean;
+  deletable?: boolean;
 
   deleteHeader: string;
   deleteConfirm: string;
@@ -864,8 +872,8 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   toggleFilter(event: any): void {
     this.hideFilter = !this.hideFilter;
   }
-  mergeSearchModel(obj: S, arrs?: string[]|any, b?: S): S {
-    return mergeSearchModel(obj, this.pageSizes, arrs, b);
+  mergeSearchModel(obj: S, b?: S, arrs?: string[]|any): S {
+    return mergeSearchModel(obj, b, this.pageSizes, arrs);
   }
   load(s: S, autoSearch: boolean): void {
     this.loadTime = new Date();
@@ -880,7 +888,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     }
   }
   protected getModelName(): string {
-    return 'state';
+    return 'model';
   }
   protected setSearchForm(form: HTMLFormElement): void {
     this.form = form;
@@ -891,15 +899,18 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   }
 
   setSearchModel(obj: S): void {
-    this.state = obj;
+    this.model = obj;
   }
 
   getSearchModel(): S {
-    let locale: Locale = enLocale;
+    let locale: Locale;
     if (this.getLocale) {
       locale = this.getLocale();
     }
-    let obj = this.state;
+    if (!locale) {
+      locale = enLocale;
+    }
+    let obj = this.model;
     if (this.ui) {
       const obj2 = this.ui.decodeFromForm(this.getSearchForm(), locale, this.getCurrencyCode());
       obj = obj2 ? obj2 : {};
@@ -920,7 +931,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     return obj3;
   }
   getOriginalSearchModel(): S {
-    return this.state;
+    return this.model;
   }
 
   protected getDisplayFields(): string[] {
@@ -945,7 +956,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     this.doSearch();
   }
   clearKeyworkOnClick = () => {
-    this.state.keyword = '';
+    this.model.q = '';
   }
   searchOnClick(event: Event): void {
     if (event && !this.getSearchForm()) {
@@ -977,7 +988,9 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       if (this.loading) {
         this.loading.showLoading();
       }
-      addParametersIntoUrl(s, isFirstLoad);
+      if (!this.ignoreUrlParam) {
+        addParametersIntoUrl(s, isFirstLoad);
+      }
       com.search(s);
     });
   }
@@ -1008,7 +1021,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       if (this.getLocale) {
         locale = this.getLocale();
       }
-      if (this.ui) {
+      if (this.ui && this.ui.validateForm) {
         valid = this.ui.validateForm(listForm, locale);
       }
     }
@@ -1022,7 +1035,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   }
   showResults(s: S, sr: SearchResult<T>): void {
     const com = this;
-    const results = sr.results;
+    const results = sr.list;
     if (results != null && results.length > 0) {
       let locale: Locale = enLocale;
       if (this.getLocale) {
@@ -1031,11 +1044,11 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       formatResults(results, this.pageIndex, this.pageSize, this.initPageSize, this.sequenceNo, this.format, locale);
     }
     const appendMode = com.appendMode;
-    showResults(s, sr, com);
+    showResults(com, s, sr.list, sr.total, sr.last);
     if (!appendMode) {
       com.setList(results);
       com.tmpPageIndex = s.page;
-      this.showMessage(buildSearchMessage(s, sr, this.resourceService));
+      this.showMessage(buildSearchMessage(this.resourceService, s.page, s.limit, sr.list, sr.total));
     } else {
       if (this.append && s.page > 1) {
         append(this.getList(), results);
@@ -1053,8 +1066,8 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     }
   }
 
-  setList(results: T[]): void {
-    this.list = results;
+  setList(list: T[]): void {
+    this.list = list;
   }
   getList(): T[] {
     return this.list;

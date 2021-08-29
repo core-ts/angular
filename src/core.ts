@@ -52,37 +52,34 @@ export interface Message {
   yes?: string;
   no?: string;
 }
-
-export function message(gv: (key: string) => string, msg: string, title?: string, yes?: string, no?: string): Message {
-  const m2 = (msg && msg.length > 0 ? gv(msg) : '');
-  const m: Message = {
-    message: m2
-  };
-  if (title && title.length > 0) {
-    m.title = gv(title);
+export function getString(key: string, gv: StringMap|((key: string) => string)): string {
+  if (typeof gv === 'function') {
+    return gv(key);
+  } else {
+    return gv[key];
   }
-  if (yes && yes.length > 0) {
-    m.yes = gv(yes);
-  }
-  if (no && no.length > 0) {
-    m.no = gv(no);
-  }
-  return m;
 }
-export function messageByHttpStatus(status: number, gv: (key: string) => string): string {
-  let msg = gv('error_internal');
-  if (status === 401) {
-    msg = gv('error_unauthorized');
-  } else if (status === 403) {
-    msg = gv('error_forbidden');
-  } else if (status === 404) {
-    msg = gv('error_not_found');
-  } else if (status === 410) {
-    msg = gv('error_gone');
-  } else if (status === 503) {
-    msg = gv('error_service_unavailable');
-  }
-  return msg;
+export function message(gv: StringMap|((key: string) => string), msg: string, title?: string, yes?: string, no?: string): Message {
+  const m2 = (msg && msg.length > 0 ? getString(msg, gv) : '');
+    const m: Message = { message: m2 };
+    if (title && title.length > 0) {
+      m.title = getString(title, gv);
+    }
+    if (yes && yes.length > 0) {
+      m.yes = getString(yes, gv);
+    }
+    if (no && no.length > 0) {
+      m.no = getString(no, gv);
+    }
+    return m;
+}
+export function messageByHttpStatus(status: number, gv: StringMap|((key: string) => string)): string {
+  const k = 'status_' + status;
+  let msg = getString(k, gv);
+    if (!msg || msg.length === 0) {
+      msg = getString('error_internal', gv);
+    }
+    return msg;
 }
 
 export interface Locale {
@@ -161,9 +158,9 @@ export interface MetaModel {
   arrayFields?: MetaModel[];
   version?: string;
 }
-export function error(err: any, gv: (key: string) => string, ae: (msg: string, header?: string, detail?: string, callback?: () => void) => void) {
-  const title = gv('error');
-  let msg = gv('error_internal');
+export function error(err: any, gv: StringMap|((key: string) => string), ae: (msg: string, header?: string, detail?: string, callback?: () => void) => void) {
+  const title = getString('error', gv);
+  let msg = getString('error_internal', gv);
   if (!err) {
     ae(msg, title);
     return;
