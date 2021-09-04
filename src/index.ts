@@ -28,6 +28,6 @@ export * from './angular';
 export * from './core';
 export * from './edit';
 
-export {ApprService, BaseDiffApprComponent, DiffApprComponent, DiffApprService, DiffModel, DiffService} from './diff';
+export * from './diff';
 export * from './components';
 export * from './formatter';

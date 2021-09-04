@@ -3,11 +3,13 @@ import {ActivatedRoute} from '@angular/router';
 import {clone, equalAll, makeDiff, setAll, setValue, trim} from 'reflectx';
 import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResults, getDisplayFields, handleSortEvent, initSearchable, mergeSearchModel, more, optimizeSearchModel, reset, showResults} from 'search-utilities';
 import {buildFromUrl, buildId, initElement} from './angular';
-import {error, getModelName, LoadingService, Locale, message, Metadata, MetaModel, ResourceService, StringMap, UIService} from './core';
-import {build, buildMessageFromStatusCode, createModel, handleVersion, ResultInfo} from './edit';
+import {createEditStatus, EditStatusConfig, error, getModelName, LoadingService, Locale, message, Metadata, MetaModel, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, StringMap, UIService, ViewParameter, ViewService} from './core';
+import {createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig} from './core';
+import {formatDiffModel, showDiff} from './diff';
+import {build, createModel, EditParameter, GenericService, handleStatus, handleVersion, ResultInfo} from './edit';
 import {format, json} from './formatter';
 import {focusFirstError, readOnly} from './formutil';
-import {getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
+import {getAutoSearch, getConfirmFunc, getDiffStatusFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
 
 export const enLocale = {
   'id': 'en-US',
@@ -47,23 +49,12 @@ export class RootComponent {
     return (this.form ? this.form.getAttribute('currency-code') : null);
   }
 }
-export interface ViewParameter {
-  resource: ResourceService;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
-  getLocale?: (profile?: string) => Locale;
-  loading?: LoadingService;
-}
-export interface ViewService<T, ID> {
-  metadata?(): Metadata;
-  keys?(): string[];
-  load(id: ID, ctx?: any): Promise<T>;
-}
 export class BaseViewComponent<T, ID> extends RootComponent {
   constructor(sv: ((id: ID, ctx?: any) => Promise<T>)|ViewService<T, ID>,
       param: ResourceService|ViewParameter,
       showError?: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
       getLocale?: (profile?: string) => Locale,
-      loading?: LoadingService) {
+      loading?: LoadingService, ignoreDate?: boolean) {
     super(getResource(param), getLocaleFunc(param, getLocale));
     this.showError = getErrorFunc(param, showError);
     this.loading = getLoadingFunc(param, loading);
@@ -76,7 +67,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
           const m = this.service.metadata();
           if (m) {
             this.metadata = m;
-            const meta = build(m);
+            const meta = build(m, ignoreDate);
             this.keys = meta.keys;
           }
         }
@@ -305,21 +296,6 @@ export class MessageComponent extends BaseComponent {
   }
 }
 
-export interface EditParameter {
-  resource: ResourceService;
-  showMessage: (msg: string, option?: string) => void;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
-  confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
-  getLocale?: (profile?: string) => Locale;
-  ui?: UIService;
-  loading?: LoadingService;
-}
-export interface GenericService<T, ID, R> extends ViewService<T, ID> {
-  patch?(obj: T, ctx?: any): Promise<R>;
-  insert(obj: T, ctx?: any): Promise<R>;
-  update(obj: T, ctx?: any): Promise<R>;
-  delete?(id: ID, ctx?: any): Promise<number>;
-}
 export class BaseEditComponent<T, ID> extends BaseComponent {
   constructor(protected service: GenericService<T, ID, number|ResultInfo<T>>, param: ResourceService|EditParameter,
       showMessage?: (msg: string, option?: string) => void,
@@ -328,16 +304,21 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       getLocale?: (profile?: string) => Locale,
       uis?: UIService,
       loading?: LoadingService,
-      patchable?: boolean, backOnSaveSuccess?: boolean) {
+      status?: EditStatusConfig,
+      patchable?: boolean, ignoreDate?: boolean, backOnSaveSuccess?: boolean) {
     super(getResource(param), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading));
     this.ui = getUIService(param, uis);
     this.showError = getErrorFunc(param, showError);
     this.showMessage = getMsgFunc(param, showMessage);
     this.confirm = getConfirmFunc(param, confirm);
+    this.status = getEditStatusFunc(param, status);
+    if (!this.status) {
+      this.status = createEditStatus(this.status);
+    }
     if (service.metadata) {
       const metadata = service.metadata();
       if (metadata) {
-        const meta = build(metadata);
+        const meta = build(metadata, ignoreDate);
         this.keys = meta.keys;
         this.version = meta.version;
         this.metadata = metadata;
@@ -385,7 +366,9 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.save = this.save.bind(this);
     this.postSave = this.postSave.bind(this);
     this.handleDuplicateKey = this.handleDuplicateKey.bind(this);
+    this.addable = true;
   }
+  protected status?: EditStatusConfig;
   protected showMessage: (msg: string, option?: string) => void;
   protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void;
   protected confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
@@ -401,9 +384,9 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   backOnSuccess = true;
   protected orginalModel: T;
 
-  addable = true;
-  editable = true;
-  deletable: boolean;
+  addable?: boolean;
+  readOnly?: boolean;
+  deletable?: boolean;
 
   insertSuccessMsg: string;
   updateSuccessMsg: string;
@@ -546,7 +529,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       const msg = message(r.value, 'error_permission_add', 'error_permission');
       this.showError(msg.message, msg.title);
       return;
-    } else if (!this.newMode && this.editable !== true) {
+    } else if (!this.newMode && this.readOnly) {
       const msg = message(r.value, 'error_permission_edit', 'error_permission');
       this.showError(msg.message, msg.title);
       return;
@@ -666,38 +649,34 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     if (this.loading) {
       this.loading.hideLoading();
     }
+    const st = this.status;
     const newMod = this.newMode;
     const successMsg = (newMod ? this.insertSuccessMsg : this.updateSuccessMsg);
     const x: any = res;
     if (!isNaN(x)) {
-      if (x > 0) {
+      if (x === st.Success) {
         this.succeed(successMsg, backOnSave);
       } else {
-        if (newMod) {
+        if (newMod && x === st.DuplicateKey) {
           this.handleDuplicateKey();
-        } else {
+        } else if (!newMod && x === st.NotFound) {
           this.handleNotFound();
+        } else {
+          handleStatus(x as number, st, this.resourceService.value, this.showError);
         }
       }
     } else {
       const result: ResultInfo<T> = x;
-      if (result.status === 1) {
+      if (result.status === st.Success) {
         this.succeed(successMsg, backOnSave, result);
-      } else if (result.status === 4) {
+      } else if (result.errors && result.errors.length > 0) {
         this.fail(result);
-      } else if (newMod && result.status === 0) {
+      } else if (newMod && result.status === st.DuplicateKey) {
         this.handleDuplicateKey(result);
+      } else if (!newMod && x === st.NotFound) {
+        this.handleNotFound();
       } else {
-        const msg = buildMessageFromStatusCode(result.status, this.resourceService.value);
-        const r = this.resourceService;
-        const title = r.value('error');
-        if (msg && msg.length > 0) {
-          this.showError(msg, title);
-        } else if (result.message && result.message.length > 0) {
-          this.showError(result.message, title);
-        } else {
-          this.showError(r.value('error_internal'), title);
-        }
+        handleStatus(result.status, st, this.resourceService.value, this.showError);
       }
     }
   }
@@ -713,8 +692,8 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> implements On
     confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
     getLocale?: (profile?: string) => Locale,
     uis?: UIService,
-    loading?: LoadingService, patchable?: boolean, backOnSaveSuccess?: boolean) {
-    super(service, param, showMessage, showError, confirm, getLocale, uis, loading, patchable, backOnSaveSuccess);
+    loading?: LoadingService, status?: EditStatusConfig, patchable?: boolean, ignoreDate?: boolean, backOnSaveSuccess?: boolean) {
+    super(service, param, showMessage, showError, confirm, getLocale, uis, loading, status, patchable, ignoreDate, backOnSaveSuccess);
     this.ngOnInit = this.ngOnInit.bind(this);
   }
   ngOnInit() {
@@ -724,48 +703,8 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> implements On
     this.load(id);
   }
 }
-
-export interface SearchPermission {
-  viewable?: boolean;
-  addable?: boolean;
-  editable?: boolean;
-  deletable?: boolean;
-  approvable?: boolean;
-}
-export interface SearchParameter {
-  resource: ResourceService;
-  showMessage: (msg: string, option?: string) => void;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
-  ui?: UIService;
-  getLocale?: (profile?: string) => Locale;
-  loading?: LoadingService;
-  auto?: boolean;
-}
-export interface LocaleFormatter<T> {
-  format(obj: T, locale: Locale): T;
-}
-export interface SearchModel {
-  page?: number;
-  limit?: number;
-  firstLimit?: number;
-  fields?: string[];
-  sort?: string;
-
-  q?: string;
-  excluding?: any;
-  refId?: string|number;
-}
-export interface SearchResult<T> {
-  total?: number;
-  list: T[];
-  last?: boolean;
-}
-export interface SearchService<T, S extends SearchModel> {
-  search(s: S, ctx?: any): Promise<SearchResult<T>>;
-  keys?(): string[];
-}
 export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent {
-  constructor(sv: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
+  constructor(sv: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
       param: ResourceService|SearchParameter,
       showMessage?: (msg: string, option?: string) => void,
       showError?: (m: string, header?: string, detail?: string, callback?: () => void) => void,
@@ -822,9 +761,10 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   protected showMessage: (msg: string, option?: string) => void;
   protected showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
   protected ui?: UIService;
-  protected searchFn: (s: S, ctx?: any) => Promise<SearchResult<T>>;
+  protected searchFn: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>;
   protected service: SearchService<T, S>;
   // Pagination
+  nextPageToken?: string;
   initPageSize = 20;
   pageSize = 20;
   pageIndex = 1;
@@ -919,6 +859,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     if (this.excluding) {
       obj3.excluding = this.excluding;
     }
+    /*
     if (this.keys && this.keys.length === 1) {
       const l = this.getList();
       if (l && l.length > 0) {
@@ -928,6 +869,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
         }
       }
     }
+    */
     return obj3;
   }
   getOriginalSearchModel(): S {
@@ -995,14 +937,31 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     });
   }
   async search(se: S) {
+    const s = clone(se);
+    let page = this.pageIndex;
+    if (!page || page < 1) {
+      page = 1;
+    }
+    let offset: number;
+    if (se.firstLimit && se.firstLimit > 0) {
+      offset = se.limit * (page - 2) + se.firstLimit;
+    } else {
+      offset = se.limit * (page - 1);
+    }
+    const limit = (page <= 1 && se.firstLimit && se.firstLimit > 0 ? se.firstLimit : se.limit);
+    const next = (this.nextPageToken && this.nextPageToken.length > 0 ? this.nextPageToken : offset);
+    const fields = se.fields;
+    delete se['page'];
+    delete se['fields'];
+    delete se['limit'];
+    delete se['firstLimit'];
     try {
-      const ctx: any =  {};
       if (this.searchFn) {
-        const sr = await this.searchFn(se, ctx);
-        this.showResults(se, sr);
+        const sr = await this.searchFn(se, limit, next, fields);
+        this.showResults(s, sr);
       } else {
-        const result = await this.service.search(se, ctx);
-        this.showResults(se, result);
+        const result = await this.service.search(se, limit, next, fields);
+        this.showResults(s, result);
       }
     } catch (err) {
       error(err, this.resourceService.value, this.showError);
@@ -1142,5 +1101,188 @@ export class SearchComponent<T, S extends SearchModel> extends BaseSearchCompone
     this.form = initElement(this.viewContainerRef, fi);
     const s = this.mergeSearchModel(buildFromUrl<S>());
     this.load(s, this.autoSearch);
+  }
+}
+
+export class BaseDiffApprComponent<T, ID> {
+  constructor(protected service: DiffApprService<T, ID>,
+      param: ResourceService|DiffParameter,
+      showMessage?: (msg: string, option?: string) => void,
+      showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+      loading?: LoadingService, status?: DiffStatusConfig) {
+    this.resourceService = getResource(param);
+    this.resource = this.resourceService.resource();
+    this.loading = getLoadingFunc(param, loading);
+    this.showError = getErrorFunc(param, showError);
+    this.showMessage = getMsgFunc(param, showMessage);
+    this.status = getDiffStatusFunc(param, status);
+    if (!this.status) {
+      this.status = createDiffStatus(this.status);
+    }
+    this.back = this.back.bind(this);
+    const x: any = {};
+    this.origin = x;
+    this.value = x;
+    this.approve = this.approve.bind(this);
+    this.reject = this.reject.bind(this);
+    this.handleError = this.handleError.bind(this);
+    this.end = this.end.bind(this);
+    this.formatFields = this.formatFields.bind(this);
+    this.load = this.load.bind(this);
+    this.handleNotFound = this.handleNotFound.bind(this);
+  }
+  protected status?: DiffStatusConfig;
+  protected showMessage: (msg: string, option?: string) => void;
+  protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void;
+  protected resourceService: ResourceService;
+  protected loading?: LoadingService;
+  resource: StringMap;
+  protected running: boolean;
+  protected form: HTMLFormElement;
+  protected id: ID;
+  origin: T;
+  value: T;
+  disabled: boolean;
+
+  protected back(): void {
+    window.history.back();
+  }
+
+  async load(_id: ID) {
+    const x: any = _id;
+    if (x && x !== '') {
+      this.id = _id;
+      try {
+        this.running = true;
+        if (this.loading) {
+          this.loading.showLoading();
+        }
+        const ctx: any = {};
+        const dobj = await this.service.diff(_id, ctx);
+        if (!dobj) {
+          this.handleNotFound(this.form);
+        } else {
+          const formatdDiff = formatDiffModel(dobj, this.formatFields);
+          this.value = formatdDiff.value;
+          this.origin = formatdDiff.origin;
+          showDiff(this.form, formatdDiff.value, formatdDiff.origin);
+        }
+      } catch (err) {
+        const data = (err &&  err.response) ? err.response : err;
+        if (data && data.status === 404) {
+          this.handleNotFound(this.form);
+        } else {
+          error(err, this.resourceService.resource(), this.showError);
+        }
+      } finally {
+        this.running = false;
+        if (this.loading) {
+          this.loading.hideLoading();
+        }
+      }
+    }
+  }
+  protected handleNotFound(form?: HTMLFormElement) {
+    this.disabled = true;
+    const r = this.resourceService.resource();
+    this.showError(r['error_not_found'], r.value['error']);
+  }
+
+  formatFields(value: T): T {
+    return value;
+  }
+  async approve(event: Event) {
+    event.preventDefault();
+    if (this.running) {
+      return;
+    }
+    try {
+      this.running = true;
+      if (this.loading) {
+        this.loading.showLoading();
+      }
+      const ctx: any = {};
+      const status = await this.service.approve(this.id, ctx);
+      const st = this.status;
+      const r = this.resourceService.resource();
+      if (status === st.Success) {
+        this.showMessage(r['msg_approve_success']);
+      } else if (status === st.VersionError) {
+        this.showMessage(r['msg_approve_version_error']);
+      } else if (status === st.NotFound) {
+        this.handleNotFound(this.form);
+      } else {
+        this.showError(r['error_internal'], r['error']);
+      }
+    } catch (err) {
+      this.handleError(err);
+    } finally {
+      this.end();
+    }
+  }
+  async reject(event: Event) {
+    event.preventDefault();
+    if (this.running) {
+      return;
+    }
+    try {
+      this.running = true;
+      if (this.loading) {
+        this.loading.showLoading();
+      }
+      const ctx: any = {};
+      const status = await this.service.reject(this.id, ctx);
+      const st = this.status;
+      const r = this.resourceService.resource();
+      if (status === st.Success) {
+        this.showMessage(r['msg_reject_success']);
+      } else if (status === st.VersionError) {
+        this.showMessage(r['msg_approve_version_error']);
+      } else if (status === st.NotFound) {
+        this.handleNotFound(this.form);
+      } else {
+        this.showError(r['error_internal'], r['error']);
+      }
+    } catch (err) {
+      this.handleError(err);
+    } finally {
+      this.end();
+    }
+  }
+  protected handleError(err: any): void {
+    const r = this.resourceService.resource();
+    const data = (err &&  err.response) ? err.response : err;
+    if (data && (data.status === 404 || data.status === 409)) {
+      if (data.status === 404) {
+        this.handleNotFound();
+      } else {
+        this.showMessage(r['msg_approve_version_error']);
+      }
+    } else {
+      error(err, r, this.showError);
+    }
+  }
+  protected end() {
+    this.disabled = true;
+    this.running = false;
+    if (this.loading) {
+      this.loading.hideLoading();
+    }
+  }
+}
+export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> implements OnInit {
+  constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute,
+    service: DiffApprService<T, ID>,
+    param: ResourceService|DiffParameter,
+    showMessage?: (msg: string, option?: string) => void,
+    showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+    loading?: LoadingService, protected status?: DiffStatusConfig) {
+    super(service, param, showMessage, showError, loading, status);
+    this.ngOnInit = this.ngOnInit.bind(this);
+  }
+  ngOnInit() {
+    this.form = initElement(this.viewContainerRef);
+    const id: ID = buildId<ID>(this.route, this.service.keys());
+    this.load(id);
   }
 }

@@ -1,6 +1,6 @@
 import {Attribute, Metadata, MetaModel, resources} from './core';
 
-export function build(model: Metadata): MetaModel {
+export function build(model: Metadata, ignoreDate?: boolean): MetaModel {
   if (model && !model.source) {
     model.source = model.name;
   }
@@ -63,7 +63,7 @@ export function build(model: Metadata): MetaModel {
           break;
         }
         case 'date': {
-          if (resources.ignoreDate) {
+          if (ignoreDate) {
             dateFields.push(attr.name);
           }
           break;
@@ -74,7 +74,7 @@ export function build(model: Metadata): MetaModel {
         }
         case 'object': {
           if (attr.typeof) {
-            const x = build(attr.typeof);
+            const x = build(attr.typeof, ignoreDate);
             x.attributeName = key;
             objectFields.push(x);
           }
@@ -82,7 +82,7 @@ export function build(model: Metadata): MetaModel {
         }
         case 'array': {
           if (attr.typeof) {
-            const y = build(attr.typeof);
+            const y = build(attr.typeof, ignoreDate);
             y.attributeName = key;
             arrayFields.push(y);
           }

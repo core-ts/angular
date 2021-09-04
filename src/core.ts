@@ -1,5 +1,118 @@
+export interface SearchPermission {
+  viewable?: boolean;
+  addable?: boolean;
+  editable?: boolean;
+  deletable?: boolean;
+  approvable?: boolean;
+}
+export interface LocaleFormatter<T> {
+  format(obj: T, locale: Locale): T;
+}
+export interface SearchModel {
+  page?: number;
+  limit?: number;
+  firstLimit?: number;
+  fields?: string[];
+  sort?: string;
 
-// tslint:disable-next-line:class-name
+  q?: string;
+  excluding?: any;
+  refId?: string|number;
+}
+export interface SearchResult<T> {
+  total?: number;
+  list: T[];
+  nextPageToken?: string;
+  last?: boolean;
+}
+export interface SearchService<T, S extends SearchModel> {
+  keys?(): string[];
+  search(s: S, limit?: number, offset?: number|string, fields?: string[]): Promise<SearchResult<T>>;
+}
+export interface SearchParameter {
+  resource: ResourceService;
+  showMessage: (msg: string, option?: string) => void;
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  ui?: UIService;
+  getLocale?: (profile?: string) => Locale;
+  loading?: LoadingService;
+  auto?: boolean;
+}
+export interface ViewParameter {
+  resource: ResourceService;
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  getLocale?: (profile?: string) => Locale;
+  loading?: LoadingService;
+}
+export interface ViewService<T, ID> {
+  metadata?(): Metadata;
+  keys?(): string[];
+  load(id: ID, ctx?: any): Promise<T>;
+}
+
+export interface EditStatusConfig {
+  DuplicateKey: number|string;
+  NotFound: number|string;
+  Success: number|string;
+  VersionError: number|string;
+  Error?: number|string;
+  DataCorrupt?: number|string;
+}
+export function createEditStatus(status?: EditStatusConfig): EditStatusConfig {
+  if (status) {
+    return status;
+  }
+  const s: EditStatusConfig = {
+    DuplicateKey: 0,
+    NotFound: 0,
+    Success: 1,
+    VersionError: 2,
+    Error: 4,
+    DataCorrupt: 8
+  };
+  return s;
+}
+export interface DiffStatusConfig {
+  NotFound: number|string;
+  Success: number|string;
+  VersionError: number|string;
+  Error?: number|string;
+}
+export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
+  if (status) {
+    return status;
+  }
+  const s: DiffStatusConfig = {
+    NotFound: 0,
+    Success: 1,
+    VersionError: 2,
+    Error: 4
+  };
+  return s;
+}
+export interface DiffParameter {
+  resource: ResourceService;
+  showMessage: (msg: string, option?: string) => void;
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  loading?: LoadingService;
+  status?: DiffStatusConfig;
+}
+export interface DiffModel<T, ID> {
+  id?: ID;
+  origin?: T;
+  value: T;
+}
+export interface DiffService<T, ID> {
+  keys(): string[];
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>;
+}
+export interface ApprService<ID> {
+  approve(id: ID, ctx?: any): Promise<number|string>;
+  reject(id: ID, ctx?: any): Promise<number|string>;
+}
+export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {
+}
+
 export interface Currency {
   currencyCode?: string;
   decimalDigits: number;

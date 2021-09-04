@@ -1,4 +1,4 @@
-import {getString, Metadata, MetaModel, resources, StringMap} from './core';
+import {EditStatusConfig, getString, LoadingService, Locale, Metadata, MetaModel, resources, ResourceService, StringMap, UIService, ViewService} from './core';
 import {build as build2} from './metadata';
 
 interface ErrorMessage {
@@ -7,24 +7,40 @@ interface ErrorMessage {
   param?: string | number | Date;
   message?: string;
 }
-export type Status = 0 | 1 | 2 | 4 | 8;
+// export type Status = 0 | 1 | 2 | 4 | 8;
 export interface ResultInfo<T> {
-  status: Status;
+  status: string|number;
   errors?: ErrorMessage[];
   value?: T;
   message?: string;
 }
+export interface EditParameter {
+  resource: ResourceService;
+  showMessage: (msg: string, option?: string) => void;
+  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
+  ui?: UIService;
+  getLocale?: (profile?: string) => Locale;
+  loading?: LoadingService;
+  status?: EditStatusConfig;
+}
+export interface GenericService<T, ID, R> extends ViewService<T, ID> {
+  patch?(obj: T, ctx?: any): Promise<R>;
+  insert(obj: T, ctx?: any): Promise<R>;
+  update(obj: T, ctx?: any): Promise<R>;
+  delete?(id: ID, ctx?: any): Promise<number>;
+}
 
-export function build(model: Metadata): MetaModel {
+export function build(model: Metadata, ignoreDate?: boolean): MetaModel {
   if (resources.cache) {
     let meta: MetaModel = resources._cache[model.name];
     if (!meta) {
-      meta = build2(model);
+      meta = build2(model, ignoreDate);
       resources._cache[model.name] = meta;
     }
     return meta;
   } else {
-    return build2(model);
+    return build2(model, ignoreDate);
   }
 }
 
@@ -74,18 +90,16 @@ export function createModel<T>(model?: Metadata): T {
   return obj;
 }
 
-export function buildMessageFromStatusCode(status: Status, gv: StringMap|((k: string) => string)): string {
-  if (status === 0) {
-    return getString('error_duplicate_key', gv);
-  } else if (status === 2) { // Below message for update only, not for add
-    return getString('error_version', gv);
-  } else if (status === 8) {
-    return getString('error_data_corrupt', gv);
+export function handleStatus(x: number|string, st: EditStatusConfig, gv: StringMap|((k: string, p?: any) => string), se: (m: string, title?: string, detail?: string, callback?: () => void) => void): void {
+  const title = getString('error', gv);
+  if (x === st.VersionError) {
+    se(getString('error_version', gv), title);
+  } else if (x === st.DataCorrupt) {
+    se(getString('error_data_corrupt', gv), title);
   } else {
-    return '';
+    se(getString('error_internal', gv), title);
   }
 }
-
 export function handleVersion<T>(obj: T, version: string): void {
   if (obj && version && version.length > 0) {
     const v = obj[version];

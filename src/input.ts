@@ -1,4 +1,4 @@
-import {LoadingService, Locale, ResourceService, UIService} from './core';
+import {DiffStatusConfig, EditStatusConfig, LoadingService, Locale, ResourceService, UIService} from './core';
 
 interface ResourceInput {
   resource: ResourceService;
@@ -74,4 +74,22 @@ export function getErrorFunc(p: ResourceService|ShowErrorInput, showErr?: (m: st
     return showErr;
   }
   return (p as any).showError;
+}
+export interface EditStatusParameter {
+  status?: EditStatusConfig;
+}
+export function getEditStatusFunc(p: ResourceService|EditStatusParameter, status?: EditStatusConfig): EditStatusConfig {
+  if (status) {
+    return status;
+  }
+  return (p as any).status;
+}
+export interface DiffStatusParameter {
+  status?: DiffStatusConfig;
+}
+export function getDiffStatusFunc(p: ResourceService|DiffStatusParameter, status?: DiffStatusConfig): DiffStatusConfig {
+  if (status) {
+    return status;
+  }
+  return (p as any).status;
 }
