@@ -656,12 +656,12 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     const successMsg = (newMod ? this.insertSuccessMsg : this.updateSuccessMsg);
     const x: any = res;
     if (!isNaN(x)) {
-      if (x === st.Success) {
+      if (x === st.success) {
         this.succeed(successMsg, backOnSave);
       } else {
-        if (newMod && x === st.DuplicateKey) {
+        if (newMod && x === st.duplicate_key) {
           this.handleDuplicateKey();
-        } else if (!newMod && x === st.NotFound) {
+        } else if (!newMod && x === st.not_found) {
           this.handleNotFound();
         } else {
           handleStatus(x as number, st, this.resourceService.value, this.showError);
@@ -669,13 +669,13 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       }
     } else {
       const result: ResultInfo<T> = x;
-      if (result.status === st.Success) {
+      if (result.status === st.success) {
         this.succeed(successMsg, backOnSave, result);
       } else if (result.errors && result.errors.length > 0) {
         this.fail(result);
-      } else if (newMod && result.status === st.DuplicateKey) {
+      } else if (newMod && result.status === st.duplicate_key) {
         this.handleDuplicateKey(result);
-      } else if (!newMod && x === st.NotFound) {
+      } else if (!newMod && x === st.not_found) {
         this.handleNotFound();
       } else {
         handleStatus(result.status, st, this.resourceService.value, this.showError);
@@ -1217,11 +1217,11 @@ export class BaseDiffApprComponent<T, ID> {
       const status = await this.service.approve(this.id, ctx);
       const st = this.status;
       const r = this.resourceService.resource();
-      if (status === st.Success) {
+      if (status === st.success) {
         this.showMessage(r['msg_approve_success']);
-      } else if (status === st.VersionError) {
+      } else if (status === st.version_error) {
         this.showMessage(r['msg_approve_version_error']);
-      } else if (status === st.NotFound) {
+      } else if (status === st.not_found) {
         this.handleNotFound(this.form);
       } else {
         this.showError(r['error_internal'], r['error']);
@@ -1246,11 +1246,11 @@ export class BaseDiffApprComponent<T, ID> {
       const status = await this.service.reject(this.id, ctx);
       const st = this.status;
       const r = this.resourceService.resource();
-      if (status === st.Success) {
+      if (status === st.success) {
         this.showMessage(r['msg_reject_success']);
-      } else if (status === st.VersionError) {
+      } else if (status === st.version_error) {
         this.showMessage(r['msg_approve_version_error']);
-      } else if (status === st.NotFound) {
+      } else if (status === st.not_found) {
         this.handleNotFound(this.form);
       } else {
         this.showError(r['error_internal'], r['error']);

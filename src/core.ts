@@ -51,42 +51,42 @@ export interface ViewService<T, ID> {
 }
 
 export interface EditStatusConfig {
-  DuplicateKey: number|string;
-  NotFound: number|string;
-  Success: number|string;
-  VersionError: number|string;
-  Error?: number|string;
-  DataCorrupt?: number|string;
+  duplicate_key: number|string;
+  not_found: number|string;
+  success: number|string;
+  version_error: number|string;
+  error?: number|string;
+  data_corrupt?: number|string;
 }
 export function createEditStatus(status?: EditStatusConfig): EditStatusConfig {
   if (status) {
     return status;
   }
   const s: EditStatusConfig = {
-    DuplicateKey: 0,
-    NotFound: 0,
-    Success: 1,
-    VersionError: 2,
-    Error: 4,
-    DataCorrupt: 8
+    duplicate_key: 0,
+    not_found: 0,
+    success: 1,
+    version_error: 2,
+    error: 4,
+    data_corrupt: 8
   };
   return s;
 }
 export interface DiffStatusConfig {
-  NotFound: number|string;
-  Success: number|string;
-  VersionError: number|string;
-  Error?: number|string;
+  not_found: number|string;
+  success: number|string;
+  version_error: number|string;
+  error?: number|string;
 }
 export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
   if (status) {
     return status;
   }
   const s: DiffStatusConfig = {
-    NotFound: 0,
-    Success: 1,
-    VersionError: 2,
-    Error: 4
+    not_found: 0,
+    success: 1,
+    version_error: 2,
+    error: 4
   };
   return s;
 }

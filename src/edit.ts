@@ -92,9 +92,9 @@ export function createModel<T>(attributes?: Attributes): T {
 
 export function handleStatus(x: number|string, st: EditStatusConfig, gv: StringMap|((k: string, p?: any) => string), se: (m: string, title?: string, detail?: string, callback?: () => void) => void): void {
   const title = getString('error', gv);
-  if (x === st.VersionError) {
+  if (x === st.version_error) {
     se(getString('error_version', gv), title);
-  } else if (x === st.DataCorrupt) {
+  } else if (x === st.data_corrupt) {
     se(getString('error_data_corrupt', gv), title);
   } else {
     se(getString('error_internal', gv), title);
