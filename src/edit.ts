@@ -1,4 +1,4 @@
-import {EditStatusConfig, getString, LoadingService, Locale, Metadata, MetaModel, resources, ResourceService, StringMap, UIService, ViewService} from './core';
+import {Attributes, EditStatusConfig, getString, LoadingService, Locale, MetaModel, resources, ResourceService, StringMap, UIService, ViewService} from './core';
 import {build as build2} from './metadata';
 
 interface ErrorMessage {
@@ -31,27 +31,27 @@ export interface GenericService<T, ID, R> extends ViewService<T, ID> {
   delete?(id: ID, ctx?: any): Promise<number>;
 }
 
-export function build(model: Metadata, ignoreDate?: boolean): MetaModel {
-  if (resources.cache) {
-    let meta: MetaModel = resources._cache[model.name];
+export function build(attributes: Attributes, ignoreDate?: boolean, name?: string): MetaModel {
+  if (resources.cache && name && name.length > 0) {
+    let meta: MetaModel = resources._cache[name];
     if (!meta) {
-      meta = build2(model, ignoreDate);
-      resources._cache[model.name] = meta;
+      meta = build2(attributes, ignoreDate);
+      resources._cache[name] = meta;
     }
     return meta;
   } else {
-    return build2(model, ignoreDate);
+    return build2(attributes, ignoreDate);
   }
 }
 
-export function createModel<T>(model?: Metadata): T {
+export function createModel<T>(attributes?: Attributes): T {
   const obj: any = {};
-  if (!model) {
+  if (!attributes) {
     return obj;
   }
-  const attrs = Object.keys(model.attributes);
+  const attrs = Object.keys(attributes);
   for (const k of attrs) {
-    const attr = model.attributes[k];
+    const attr = attributes[k];
     switch (attr.type) {
       case 'string':
       case 'text':

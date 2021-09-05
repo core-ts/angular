@@ -1,9 +1,9 @@
 import {OnInit, ViewContainerRef} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {clone, equalAll, makeDiff, setAll, setValue, trim} from 'reflectx';
-import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResults, getDisplayFields, handleSortEvent, initSearchable, mergeSearchModel, more, optimizeSearchModel, reset, showResults} from 'search-utilities';
+import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResults, getDisplayFields, handleAppend, handleSortEvent, initSearchable, mergeSearchModel, more, optimizeSearchModel, reset, showPaging} from 'search-utilities';
 import {buildFromUrl, buildId, initElement} from './angular';
-import {createEditStatus, EditStatusConfig, error, getModelName, LoadingService, Locale, message, Metadata, MetaModel, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, StringMap, UIService, ViewParameter, ViewService} from './core';
+import {Attributes, createEditStatus, EditStatusConfig, error, getModelName, LoadingService, Locale, message, MetaModel, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, StringMap, UIService, ViewParameter, ViewService} from './core';
 import {createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig} from './core';
 import {formatDiffModel, showDiff} from './diff';
 import {build, createModel, EditParameter, GenericService, handleStatus, handleVersion, ResultInfo} from './edit';
@@ -66,7 +66,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
         if (this.service.metadata) {
           const m = this.service.metadata();
           if (m) {
-            this.metadata = m;
+            // this.metadata = m;
             const meta = build(m, ignoreDate);
             this.keys = meta.keys;
           }
@@ -81,12 +81,13 @@ export class BaseViewComponent<T, ID> extends RootComponent {
     this.getModel = this.getModel.bind(this);
     this.handleNotFound = this.handleNotFound.bind(this);
   }
+  protected name?: string;
   protected loading?: LoadingService;
   protected showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void;
   protected loadFn: (id: ID, ctx?: any) => Promise<T>;
   protected service: ViewService<T, ID>;
   protected keys: string[];
-  protected metadata?: Metadata;
+  // protected metadata?: Attributes;
 
   async load(_id: ID, callback?: (m: T, showF: (model: T) => void) => void) {
     const id: any = _id;
@@ -135,8 +136,8 @@ export class BaseViewComponent<T, ID> extends RootComponent {
     this.showError(msg.message, msg.title);
   }
   protected getModelName(): string {
-    if (this.metadata) {
-      return this.metadata.name;
+    if (this.name && this.name.length > 0) {
+      return this.name;
     }
     const n = getModelName(this.form);
     if (!n || n.length === 0) {
@@ -368,12 +369,13 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.handleDuplicateKey = this.handleDuplicateKey.bind(this);
     this.addable = true;
   }
+  protected name?: string;
   protected status?: EditStatusConfig;
   protected showMessage: (msg: string, option?: string) => void;
   protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void;
   protected confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
   protected ui?: UIService;
-  protected metadata?: Metadata;
+  protected metadata?: Attributes;
   protected metamodel?: MetaModel;
   protected keys: string[];
   protected version?: string;
@@ -455,8 +457,8 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     }
   }
   protected getModelName(): string {
-    if (this.metadata) {
-      return this.metadata.name;
+    if (this.name && this.name.length > 0) {
+      return this.name;
     }
     const n = getModelName(this.form);
     if (!n || n.length === 0) {
@@ -1003,17 +1005,27 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       formatResults(results, this.pageIndex, this.pageSize, this.initPageSize, this.sequenceNo, this.format, locale);
     }
     const appendMode = com.appendMode;
-    showResults(com, s, sr.list, sr.total, sr.last);
-    if (!appendMode) {
-      com.setList(results);
-      com.tmpPageIndex = s.page;
-      this.showMessage(buildSearchMessage(this.resourceService, s.page, s.limit, sr.list, sr.total));
-    } else {
+    com.pageIndex = (s.page && s.page >= 1 ? s.page : 1);
+    if (sr.total) {
+      com.itemTotal = sr.total;
+    }
+    if (appendMode) {
+      let limit = s.limit;
+      if (s.page <= 1 && s.firstLimit && s.firstLimit > 0) {
+        limit = s.firstLimit;
+      }
+      com.nextPageToken = sr.nextPageToken;
+      handleAppend(com, limit, sr.list, sr.nextPageToken);
       if (this.append && s.page > 1) {
         append(this.getList(), results);
       } else {
         this.setList(results);
       }
+    } else {
+      showPaging(com, s.limit, sr.list, sr.total);
+      com.setList(results);
+      com.tmpPageIndex = s.page;
+      this.showMessage(buildSearchMessage(this.resourceService, s.page, s.limit, sr.list, sr.total));
     }
     this.running = false;
     if (this.loading) {

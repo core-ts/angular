@@ -45,7 +45,7 @@ export interface ViewParameter {
   loading?: LoadingService;
 }
 export interface ViewService<T, ID> {
-  metadata?(): Metadata;
+  metadata?(): Attributes;
   keys?(): string[];
   load(id: ID, ctx?: any): Promise<T>;
 }
@@ -248,17 +248,17 @@ export interface Attributes {
 export interface Attribute {
   name?: string;
   field?: string;
-  type: Type;
+  type?: Type;
   format?: Format;
   key?: boolean;
   version?: boolean;
   ignored?: boolean;
-  typeof?: Metadata;
+  typeof?: Attributes;
   scale?: number;
   noformat?: boolean;
 }
 export interface MetaModel {
-  model: Metadata;
+  attributes: Attributes;
   attributeName?: string;
   keys?: string[];
   dateFields?: string[];

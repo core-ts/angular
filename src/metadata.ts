@@ -1,10 +1,7 @@
-import {Attribute, Metadata, MetaModel, resources} from './core';
+import {Attribute, Attributes, MetaModel} from './core';
 
-export function build(model: Metadata, ignoreDate?: boolean): MetaModel {
-  if (model && !model.source) {
-    model.source = model.name;
-  }
-  const meta: MetaModel = {model};
+export function build(attributes: Attributes, ignoreDate?: boolean): MetaModel {
+  const meta: MetaModel = {attributes};
   const pks: string[] = new Array<string>();
   const dateFields = new Array<string>();
   const integerFields = new Array<string>();
@@ -14,9 +11,9 @@ export function build(model: Metadata, ignoreDate?: boolean): MetaModel {
   const faxFields = new Array<string>();
   const objectFields = new Array<MetaModel>();
   const arrayFields = new Array<MetaModel>();
-  const keys: string[] = Object.keys(model.attributes);
+  const keys: string[] = Object.keys(attributes);
   for (const key of keys) {
-    const attr: Attribute = model.attributes[key];
+    const attr: Attribute = attributes[key];
     if (attr) {
       attr.name = key;
       if (attr.version) {

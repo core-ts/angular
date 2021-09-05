@@ -97,7 +97,7 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
             v = v.replace(loc.decimalSeparator, '.');
           }
           if (v.indexOf('%') >= 0) {
-            const attr: Attribute = m.model.attributes[p];
+            const attr: Attribute = m.attributes[p];
             if (attr.format === 'percentage') {
               v = v.replace('%', '');
             }
@@ -113,7 +113,7 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
         if (v && typeof v === 'string') {
           v = v.replace(r1, '');
           if (v.indexOf('%') >= 0) {
-            const attr: Attribute = m.model.attributes[p];
+            const attr: Attribute = m.attributes[p];
             if (attr.format === 'percentage') {
               v = v.replace('%', '');
             }
@@ -215,7 +215,7 @@ export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string, inclu
       for (const p of m.integerFields) {
         const v = obj[p];
         if (v && !isNaN(v)) {
-          const attr: Attribute = m.model.attributes[p];
+          const attr: Attribute = m.attributes[p];
           if (attr && !attr.noformat && !attr.key && !attr.version) {
             obj[p] = resources.formatNumber(v, attr.scale, loc);
           }
@@ -226,7 +226,7 @@ export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string, inclu
       for (const p of m.numberFields) {
         const v = obj[p];
         if (v && !isNaN(v)) {
-          const attr: Attribute = m.model.attributes[p];
+          const attr: Attribute = m.attributes[p];
           if (attr && !attr.noformat && !attr.key && !attr.version) {
             let z = resources.formatNumber(v, attr.scale, loc);
             if (attr.format === 'percentage') {
@@ -241,7 +241,7 @@ export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string, inclu
       for (const p of m.currencyFields) {
         const v = obj[p];
         if (v && !isNaN(v)) {
-          const attr: Attribute = m.model.attributes[p];
+          const attr: Attribute = m.attributes[p];
           if (attr && !attr.noformat && (cur || attr.scale) && !attr.key && !attr.version) {
             let scale = attr.scale;
             let currency;
