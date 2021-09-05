@@ -87,6 +87,11 @@ export function buildParameters<T>(url: string): T {
 
 export class HttpRequest {
   constructor(protected http: HttpClient, protected getOptions?: () => { headers?: Headers }) {
+    this.get = this.get.bind(this);
+    this.delete = this.delete.bind(this);
+    this.post = this.post.bind(this);
+    this.put = this.put.bind(this);
+    this.patch = this.patch.bind(this);
   }
   get<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
     return this.http.get<T>(url, opts ? opts : this.getOptions()).toPromise();
