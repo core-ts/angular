@@ -1,6 +1,7 @@
-import {HttpParams} from '@angular/common/http';
+import {HttpClient, HttpParams} from '@angular/common/http';
 import {ViewContainerRef} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
+import {Headers} from './core';
 import {focusFirstElement} from './formutil';
 
 export function getId<ID>(route: ActivatedRoute, keys?: string[], id?: ID): ID {
@@ -82,4 +83,24 @@ export function buildParameters<T>(url: string): T {
     obj[key] = httpParams.get(key);
   }
   return obj;
+}
+
+export class HttpRequest {
+  constructor(protected http: HttpClient, protected getOptions?: () => { headers?: Headers }) {
+  }
+  get<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
+    return this.http.get<T>(url, opts ? opts : this.getOptions()).toPromise();
+  }
+  delete<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
+    return this.http.delete<T>(url, opts ? opts : this.getOptions()).toPromise();
+  }
+  post<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
+    return this.http.post<T>(url, obj, opts ? opts : this.getOptions()).toPromise();
+  }
+  put<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
+    return this.http.put<T>(url, obj, opts ? opts : this.getOptions()).toPromise();
+  }
+  patch<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
+    return this.http.patch<T>(url, obj, opts ? opts : this.getOptions()).toPromise();
+  }
 }

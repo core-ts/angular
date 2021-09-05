@@ -118,7 +118,9 @@ export interface Currency {
   decimalDigits: number;
   currencySymbol: string;
 }
-
+export interface Headers {
+  [key: string]: any;
+}
 // tslint:disable-next-line:class-name
 export class resources {
   static _cache: any = {};
@@ -127,10 +129,11 @@ export class resources {
   private static _preg = / |\-|\.|\(|\)/g;
   static format1 = / |,|\$|€|£|¥|'|٬|،| /g;
   static format2 = / |\.|\$|€|£|¥|'|٬|،| /g;
-  static currency: (currencyCode: string) => Currency;
-  static formatNumber: (value: number, scale: number, locale: Locale) => string;
-  static formatPhone: (phone: string) => string;
-  static formatFax: (fax: string) => string;
+  static currency?: (currencyCode: string) => Currency;
+  static formatNumber?: (value: number, scale: number, locale: Locale) => string;
+  static formatPhone?: (phone: string) => string;
+  static formatFax?: (fax: string) => string;
+  static options?: () => { headers?: Headers };
 
   static removePhoneFormat(phone: string): string {
     if (phone) {
