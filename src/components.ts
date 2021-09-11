@@ -3,7 +3,7 @@ import {ActivatedRoute} from '@angular/router';
 import {clone, equalAll, makeDiff, setAll, setValue, trim} from 'reflectx';
 import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResults, getDisplayFields, handleAppend, handleSortEvent, initSearchable, mergeSearchModel, more, optimizeSearchModel, reset, showPaging} from 'search-utilities';
 import {buildFromUrl, buildId, initElement} from './angular';
-import {Attributes, createEditStatus, EditStatusConfig, error, getModelName, LoadingService, Locale, message, MetaModel, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, StringMap, UIService, ViewParameter, ViewService} from './core';
+import {Attributes, createEditStatus, EditStatusConfig, error, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewParameter, ViewService} from './core';
 import {createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig} from './core';
 import {formatDiffModel, showDiff} from './diff';
 import {build, createModel, EditParameter, GenericService, handleStatus, handleVersion, ResultInfo} from './edit';
@@ -60,7 +60,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
     this.loading = getLoadingFunc(param, loading);
     if (sv) {
       if (typeof sv === 'function') {
-        this.loadFn = sv;
+        this.loadData = sv;
       } else {
         this.service = sv;
         if (this.service.metadata) {
@@ -84,48 +84,40 @@ export class BaseViewComponent<T, ID> extends RootComponent {
   protected name?: string;
   protected loading?: LoadingService;
   protected showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void;
-  protected loadFn: (id: ID, ctx?: any) => Promise<T>;
+  protected loadData: (id: ID, ctx?: any) => Promise<T>;
   protected service: ViewService<T, ID>;
   protected keys: string[];
   // protected metadata?: Attributes;
 
-  async load(_id: ID, callback?: (m: T, showF: (model: T) => void) => void) {
+  load(_id: ID, callback?: (m: T, showF: (model: T) => void) => void) {
     const id: any = _id;
     if (id && id !== '') {
-      try {
-        this.running = true;
-        if (this.loading) {
-          this.loading.showLoading();
-        }
-        const ctx: any = {};
-        let obj: T;
-        if (this.loadFn) {
-          obj = await this.loadFn(id, ctx);
-        } else {
-          obj = await this.service.load(id, ctx);
-        }
+      this.running = true;
+      showLoading(this.loading);
+      const com = this;
+      const fn = (this.loadData ? this.loadData : this.service.load);
+      fn(id).then(obj => {
         if (obj) {
           if (callback) {
-            callback(obj, this.showModel);
+            callback(obj, com.showModel);
           } else {
-            this.showModel(obj);
+            com.showModel(obj);
           }
         } else {
-          this.handleNotFound(this.form);
+          com.handleNotFound(com.form);
         }
-      } catch (err) {
+        com.running = false;
+        hideLoading(com.loading);
+      }).catch(err => {
         const data = (err &&  err.response) ? err.response : err;
         if (data && data.status === 404) {
-          this.handleNotFound(this.form);
+          com.handleNotFound(com.form);
         } else {
-          error(err, this.resourceService.value, this.showError);
+          error(err, com.resourceService.value, com.showError);
         }
-      } finally {
-        this.running = false;
-        if (this.loading) {
-          this.loading.hideLoading();
-        }
-      }
+        com.running = false;
+        hideLoading(com.loading);
+      });
     }
   }
   protected handleNotFound(form?: HTMLFormElement): void {
@@ -392,37 +384,35 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
 
   insertSuccessMsg: string;
   updateSuccessMsg: string;
-  async load(_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) {
+  load(_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) {
     const id: any = _id;
     if (id && id !== '') {
       const com = this;
-      try {
-        const obj = await this.service.load(id);
+      this.service.load(id).then(obj => {
         if (!obj) {
           com.handleNotFound(com.form);
         } else {
-          this.newMode = false;
-          this.orginalModel = clone(obj);
-          this.formatModel(obj);
+          com.newMode = false;
+          com.orginalModel = clone(obj);
+          com.formatModel(obj);
           if (callback) {
-            callback(obj, this.showModel);
+            callback(obj, com.showModel);
           } else {
-            this.showModel(obj);
+            com.showModel(obj);
           }
         }
-      } catch (err) {
+        com.running = false;
+        hideLoading(com.loading);
+      }).catch(err => {
         const data = (err &&  err.response) ? err.response : err;
         if (data && data.status === 404) {
           com.handleNotFound(com.form);
         } else {
-          error(err, this.resourceService.value, this.showError);
+          error(err, com.resourceService.value, com.showError);
         }
-      } finally {
         com.running = false;
-        if (this.loading) {
-          this.loading.hideLoading();
-        }
-      }
+        hideLoading(com.loading);
+      });
     } else {
       this.newMode = true;
       this.orginalModel = null;
@@ -578,31 +568,28 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       callback(obj);
     }
   }
-  async save(obj: T, body?: T, isBack?: boolean) {
+  save(obj: T, body?: T, isBack?: boolean) {
     this.running = true;
-    if (this.loading) {
-      this.loading.showLoading();
-    }
+    showLoading(this.loading);
     const isBackO = (isBack == null || isBack === undefined ? this.backOnSuccess : isBack);
     const com = this;
-    try {
-      const ctx: any = {};
-      if (!this.newMode) {
-        if (this.patchable === true && this.service.patch && body && Object.keys(body).length > 0) {
-          const result = await this.service.patch(body, ctx);
-          com.postSave(result, isBackO);
-        } else {
-          const result = await this.service.update(obj, ctx);
-          com.postSave(result, isBackO);
-        }
-      } else {
-        trim(obj);
-        const result = await this.service.insert(obj, ctx);
-        com.postSave(result, isBackO);
+    let m = obj;
+    let fn = this.newMode ? this.service.insert : this.service.update;
+    if (!this.newMode) {
+      if (this.patchable === true && this.service.patch && body && Object.keys(body).length > 0) {
+        m = body;
+        fn = this.service.patch;
       }
-    } catch (err) {
-      error(err, this.resourceService.value, this.showError);
     }
+    fn(m).then(result => {
+      com.postSave(result, isBackO);
+      com.running = false;
+      hideLoading(com.loading);
+    }).then(err => {
+      error(err, com.resourceService.value, com.showError);
+      com.running = false;
+      hideLoading(com.loading);
+    });
   }
   protected succeed(msg: string, backOnSave: boolean, result?: ResultInfo<T>): void {
     if (result) {
@@ -648,9 +635,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   }
   protected postSave(res: number|ResultInfo<T>, backOnSave: boolean): void {
     this.running = false;
-    if (this.loading) {
-      this.loading.hideLoading();
-    }
+    hideLoading(this.loading);
     const st = this.status;
     const newMod = this.newMode;
     const successMsg = (newMod ? this.insertSuccessMsg : this.updateSuccessMsg);
@@ -929,16 +914,14 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
         return;
       }
       com.running = true;
-      if (this.loading) {
-        this.loading.showLoading();
-      }
+      showLoading(this.loading);
       if (!this.ignoreUrlParam) {
         addParametersIntoUrl(s, isFirstLoad);
       }
       com.search(s);
     });
   }
-  async search(se: S) {
+  search(se: S) {
     const s = clone(se);
     let page = this.pageIndex;
     if (!page || page < 1) {
@@ -957,22 +940,17 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     delete se['fields'];
     delete se['limit'];
     delete se['firstLimit'];
-    try {
-      if (this.searchFn) {
-        const sr = await this.searchFn(se, limit, next, fields);
-        this.showResults(s, sr);
-      } else {
-        const result = await this.service.search(se, limit, next, fields);
-        this.showResults(s, result);
-      }
-    } catch (err) {
-      error(err, this.resourceService.value, this.showError);
-    } finally {
-      this.running = false;
-      if (this.loading) {
-        this.loading.hideLoading();
-      }
-    }
+    const fn = this.searchFn ? this.searchFn : this.service.search;
+    const com = this;
+    fn(se, limit, next, fields).then(sr => {
+      com.showResults(s, sr);
+      com.running = false;
+      hideLoading(com.loading);
+    }).then(err => {
+      error(err, com.resourceService.value, com.showError);
+      com.running = false;
+      hideLoading(com.loading);
+    });
   }
   validateSearch(se: S, callback: () => void): void {
     let valid = true;
@@ -1028,9 +1006,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       this.showMessage(buildSearchMessage(this.resourceService, s.page, s.limit, sr.list, sr.total));
     }
     this.running = false;
-    if (this.loading) {
-      this.loading.hideLoading();
-    }
+    hideLoading(com.loading);
     if (this.triggerSearch) {
       this.triggerSearch = false;
       this.resetAndSearch();
@@ -1101,8 +1077,7 @@ export class SearchComponent<T, S extends SearchModel> extends BaseSearchCompone
       showError?: (m: string, header?: string, detail?: string, callback?: () => void) => void,
       getLocale?: (profile?: string) => Locale,
       uis?: UIService,
-      loading?: LoadingService,
-      autoSearch?: boolean) {
+      loading?: LoadingService) {
     super(sv, param, showMessage, showError, getLocale, uis, loading);
     this.autoSearch = getAutoSearch(param);
     this.ngOnInit = this.ngOnInit.bind(this);
@@ -1160,38 +1135,34 @@ export class BaseDiffApprComponent<T, ID> {
     window.history.back();
   }
 
-  async load(_id: ID) {
+  load(_id: ID) {
     const x: any = _id;
     if (x && x !== '') {
       this.id = _id;
-      try {
-        this.running = true;
-        if (this.loading) {
-          this.loading.showLoading();
-        }
-        const ctx: any = {};
-        const dobj = await this.service.diff(_id, ctx);
+      this.running = true;
+      showLoading(this.loading);
+      const com = this;
+      this.service.diff(_id).then(dobj => {
         if (!dobj) {
-          this.handleNotFound(this.form);
+          com.handleNotFound(com.form);
         } else {
-          const formatdDiff = formatDiffModel(dobj, this.formatFields);
-          this.value = formatdDiff.value;
-          this.origin = formatdDiff.origin;
-          showDiff(this.form, formatdDiff.value, formatdDiff.origin);
+          const formatdDiff = formatDiffModel(dobj, com.formatFields);
+          com.value = formatdDiff.value;
+          com.origin = formatdDiff.origin;
+          showDiff(com.form, formatdDiff.value, formatdDiff.origin);
         }
-      } catch (err) {
+        com.running = false;
+        hideLoading(com.loading);
+      }).catch(err => {
         const data = (err &&  err.response) ? err.response : err;
         if (data && data.status === 404) {
-          this.handleNotFound(this.form);
+          com.handleNotFound(com.form);
         } else {
-          error(err, this.resourceService.resource(), this.showError);
+          error(err, com.resourceService.resource(), com.showError);
         }
-      } finally {
-        this.running = false;
-        if (this.loading) {
-          this.loading.hideLoading();
-        }
-      }
+        com.running = false;
+        hideLoading(com.loading);
+      });
     }
   }
   protected handleNotFound(form?: HTMLFormElement) {
@@ -1203,63 +1174,57 @@ export class BaseDiffApprComponent<T, ID> {
   formatFields(value: T): T {
     return value;
   }
-  async approve(event: Event) {
+  approve(event: Event) {
     event.preventDefault();
     if (this.running) {
       return;
     }
-    try {
-      this.running = true;
-      if (this.loading) {
-        this.loading.showLoading();
-      }
-      const ctx: any = {};
-      const status = await this.service.approve(this.id, ctx);
-      const st = this.status;
-      const r = this.resourceService.resource();
+    const com = this;
+    const st = this.status;
+    const r = this.resourceService.resource();
+    this.running = true;
+    showLoading(this.loading);
+    this.service.approve(this.id).then(status => {
       if (status === st.success) {
-        this.showMessage(r['msg_approve_success']);
+        com.showMessage(r['msg_approve_success']);
       } else if (status === st.version_error) {
-        this.showMessage(r['msg_approve_version_error']);
+        com.showMessage(r['msg_approve_version_error']);
       } else if (status === st.not_found) {
-        this.handleNotFound(this.form);
+        com.handleNotFound(com.form);
       } else {
-        this.showError(r['error_internal'], r['error']);
+        com.showError(r['error_internal'], r['error']);
       }
-    } catch (err) {
-      this.handleError(err);
-    } finally {
-      this.end();
-    }
+      com.end();
+    }).then(err => {
+      com.handleError(err);
+      com.end();
+    });
   }
-  async reject(event: Event) {
+  reject(event: Event) {
     event.preventDefault();
     if (this.running) {
       return;
     }
-    try {
-      this.running = true;
-      if (this.loading) {
-        this.loading.showLoading();
-      }
-      const ctx: any = {};
-      const status = await this.service.reject(this.id, ctx);
-      const st = this.status;
-      const r = this.resourceService.resource();
+    const com = this;
+    const st = this.status;
+    const r = this.resourceService.resource();
+    this.running = true;
+    showLoading(this.loading);
+    this.service.reject(this.id).then(status => {
       if (status === st.success) {
-        this.showMessage(r['msg_reject_success']);
+        com.showMessage(r['msg_reject_success']);
       } else if (status === st.version_error) {
-        this.showMessage(r['msg_approve_version_error']);
+        com.showMessage(r['msg_approve_version_error']);
       } else if (status === st.not_found) {
-        this.handleNotFound(this.form);
+        com.handleNotFound(com.form);
       } else {
-        this.showError(r['error_internal'], r['error']);
+        com.showError(r['error_internal'], r['error']);
       }
-    } catch (err) {
-      this.handleError(err);
-    } finally {
-      this.end();
-    }
+      com.end();
+    }).catch(err => {
+      com.handleError(err);
+      com.end();
+    });
   }
   protected handleError(err: any): void {
     const r = this.resourceService.resource();
@@ -1277,9 +1242,7 @@ export class BaseDiffApprComponent<T, ID> {
   protected end() {
     this.disabled = true;
     this.running = false;
-    if (this.loading) {
-      this.loading.hideLoading();
-    }
+    hideLoading(this.loading);
   }
 }
 export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> implements OnInit {

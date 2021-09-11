@@ -308,3 +308,43 @@ export function getModelName(form: HTMLFormElement): string {
   }
   return '';
 }
+export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
+  try {
+    const element = e.target as HTMLInputElement;
+    const container = element.form.childNodes[1] as HTMLElement;
+    const elementRect = element.getBoundingClientRect();
+    const absoluteElementTop = elementRect.top + window.pageYOffset;
+    const middle = absoluteElementTop - (window.innerHeight / 2);
+    const scrollTop = container.scrollTop;
+    const timeOut = isUseTimeOut ? 300 : 0;
+    const isChrome = navigator.userAgent.search('Chrome') > 0;
+    setTimeout(() => {
+      if (isChrome) {
+        const scrollPosition = scrollTop === 0 ? (elementRect.top + 64) : (scrollTop + middle);
+        container.scrollTo(0, Math.abs(scrollPosition));
+      } else {
+        container.scrollTo(0, Math.abs(scrollTop + middle));
+      }
+    }, timeOut);
+  } catch (e) {
+    console.log(e);
+  }
+};
+export function showLoading(loading: LoadingService|((firstTime?: boolean) => void)): void {
+  if (loading) {
+    if (typeof loading === 'function') {
+      loading();
+    } else {
+      loading.showLoading();
+    }
+  }
+}
+export function hideLoading(loading: LoadingService|(() => void)): void {
+  if (loading) {
+    if (typeof loading === 'function') {
+      loading();
+    } else {
+      loading.hideLoading();
+    }
+  }
+}
