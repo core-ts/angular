@@ -1,10 +1,9 @@
-import {OnInit, ViewContainerRef} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
-import {clone, equalAll, makeDiff, setAll, setValue, trim} from 'reflectx';
+import {clone, equalAll, makeDiff, setAll, setValue} from 'reflectx';
 import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResults, getDisplayFields, handleAppend, handleSortEvent, initSearchable, mergeSearchModel, more, optimizeSearchModel, reset, showPaging} from 'search-utilities';
 import {buildFromUrl, buildId, initElement} from './angular';
 import {Attributes, createEditStatus, EditStatusConfig, error, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewParameter, ViewService} from './core';
-import {createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig} from './core';
+import {createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig, ViewContainerRef} from './core';
 import {formatDiffModel, showDiff} from './diff';
 import {build, createModel, EditParameter, GenericService, handleStatus, handleVersion, ResultInfo} from './edit';
 import {format, json} from './formatter';
@@ -32,12 +31,12 @@ export class RootComponent {
     this.getCurrencyCode = this.getCurrencyCode.bind(this);
     this.back = this.back.bind(this);
   }
+  resource: StringMap;
   protected includeCurrencySymbol: boolean;
-  protected resource: StringMap;
   protected running: boolean;
   protected form?: HTMLFormElement;
 
-  protected back(): void {
+  back(): void {
     window.history.back();
   }
 
@@ -146,7 +145,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
     return model;
   }
 }
-export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> implements OnInit {
+export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> {
   constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute,
       sv: ((id: ID, ctx?: any) => Promise<T>)|ViewService<T, ID>,
       param: ResourceService|ViewParameter,
@@ -156,6 +155,7 @@ export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> implements On
     super(sv, param, showError, getLocale, loading);
     this.ngOnInit = this.ngOnInit.bind(this);
   }
+  // tslint:disable-next-line:use-life-cycle-interface
   ngOnInit() {
     this.form = initElement(this.viewContainerRef);
     const id: ID = buildId<ID>(this.route, this.keys);
@@ -672,7 +672,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.showError(msg.message, msg.title);
   }
 }
-export class EditComponent<T, ID> extends BaseEditComponent<T, ID> implements OnInit {
+export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
   constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute, service: GenericService<T, ID, number|ResultInfo<T>>, param: ResourceService|EditParameter,
     showMessage?: (msg: string, option?: string) => void,
     showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
@@ -683,6 +683,7 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> implements On
     super(service, param, showMessage, showError, confirm, getLocale, uis, loading, status, patchable, ignoreDate, backOnSaveSuccess);
     this.ngOnInit = this.ngOnInit.bind(this);
   }
+  // tslint:disable-next-line:use-life-cycle-interface
   ngOnInit() {
     const fi = (this.ui ? this.ui.registerEvents : null);
     this.form = initElement(this.viewContainerRef, fi);
@@ -776,8 +777,8 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   loadTime: Date;
   loadPage = 1;
 
-  protected model: S;
-  private list: T[];
+  model?: S;
+  list?: T[];
   excluding: string[]|number[];
   hideFilter: boolean;
   ignoreUrlParam: boolean;
@@ -1069,7 +1070,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     this.doSearch();
   }
 }
-export class SearchComponent<T, S extends SearchModel> extends BaseSearchComponent<T, S> implements OnInit {
+export class SearchComponent<T, S extends SearchModel> extends BaseSearchComponent<T, S> {
   constructor(protected viewContainerRef: ViewContainerRef,
       sv: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
       param: ResourceService|SearchParameter,
@@ -1083,6 +1084,7 @@ export class SearchComponent<T, S extends SearchModel> extends BaseSearchCompone
     this.ngOnInit = this.ngOnInit.bind(this);
   }
   protected autoSearch = true;
+  // tslint:disable-next-line:use-life-cycle-interface
   ngOnInit() {
     const fi = (this.ui ? this.ui.registerEvents : null);
     this.form = initElement(this.viewContainerRef, fi);
@@ -1131,7 +1133,7 @@ export class BaseDiffApprComponent<T, ID> {
   value: T;
   disabled: boolean;
 
-  protected back(): void {
+  back(): void {
     window.history.back();
   }
 
@@ -1245,7 +1247,7 @@ export class BaseDiffApprComponent<T, ID> {
     hideLoading(this.loading);
   }
 }
-export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> implements OnInit {
+export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
   constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute,
     service: DiffApprService<T, ID>,
     param: ResourceService|DiffParameter,
@@ -1255,6 +1257,7 @@ export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> imple
     super(service, param, showMessage, showError, loading, status);
     this.ngOnInit = this.ngOnInit.bind(this);
   }
+  // tslint:disable-next-line:use-life-cycle-interface
   ngOnInit() {
     this.form = initElement(this.viewContainerRef);
     const id: ID = buildId<ID>(this.route, this.service.keys());

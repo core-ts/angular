@@ -1,3 +1,9 @@
+export interface ElementRef<T = any> {
+  nativeElement: T;
+}
+export interface ViewContainerRef {
+  element: ElementRef;
+}
 export interface SearchPermission {
   viewable?: boolean;
   addable?: boolean;
