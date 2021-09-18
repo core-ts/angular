@@ -3,9 +3,6 @@ import {ViewContainerRef} from '@angular/core';
 import {Headers} from './core';
 import {focusFirstElement} from './formutil';
 
-export declare type Params = {
-  [key: string]: any;
-};
 export interface ActivatedRoute {
   /** An observable of the matrix parameters scoped to this route. */
   params: any;

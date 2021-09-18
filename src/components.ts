@@ -152,10 +152,11 @@ export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> {
       getLocale?: (profile?: string) => Locale,
       loading?: LoadingService) {
     super(sv, param, showError, getLocale, loading);
-    this.ngOnInit = this.ngOnInit.bind(this);
+    this.onInit = this.onInit.bind(this);
+    this.ngOnInit = this.onInit;
   }
-  // tslint:disable-next-line:use-life-cycle-interface
-  ngOnInit() {
+  ngOnInit: () => void;
+  onInit() {
     this.form = initElement(this.viewContainerRef);
     const id: ID = buildId<ID>(this.route, this.keys);
     this.load(id);
@@ -680,10 +681,11 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
     uis?: UIService,
     loading?: LoadingService, status?: EditStatusConfig, patchable?: boolean, ignoreDate?: boolean, backOnSaveSuccess?: boolean) {
     super(service, param, showMessage, showError, confirm, getLocale, uis, loading, status, patchable, ignoreDate, backOnSaveSuccess);
-    this.ngOnInit = this.ngOnInit.bind(this);
+    this.onInit = this.onInit.bind(this);
+    this.ngOnInit = this.onInit;
   }
-  // tslint:disable-next-line:use-life-cycle-interface
-  ngOnInit() {
+  ngOnInit: () => void;
+  onInit() {
     const fi = (this.ui ? this.ui.registerEvents : null);
     this.form = initElement(this.viewContainerRef, fi);
     const id: ID = buildId<ID>(this.route, this.keys);
@@ -1080,11 +1082,12 @@ export class SearchComponent<T, S extends SearchModel> extends BaseSearchCompone
       loading?: LoadingService) {
     super(sv, param, showMessage, showError, getLocale, uis, loading);
     this.autoSearch = getAutoSearch(param);
-    this.ngOnInit = this.ngOnInit.bind(this);
+    this.onInit = this.onInit.bind(this);
+    this.ngOnInit = this.onInit;
   }
   protected autoSearch = true;
-  // tslint:disable-next-line:use-life-cycle-interface
-  ngOnInit() {
+  ngOnInit: () => void;
+  onInit() {
     const fi = (this.ui ? this.ui.registerEvents : null);
     this.form = initElement(this.viewContainerRef, fi);
     const s = this.mergeSearchModel(buildFromUrl<S>());
@@ -1254,10 +1257,11 @@ export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
     showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
     loading?: LoadingService, protected status?: DiffStatusConfig) {
     super(service, param, showMessage, showError, loading, status);
-    this.ngOnInit = this.ngOnInit.bind(this);
+    this.onInit = this.onInit.bind(this);
+    this.ngOnInit = this.onInit;
   }
-  // tslint:disable-next-line:use-life-cycle-interface
-  ngOnInit() {
+  ngOnInit: () => void;
+  onInit() {
     this.form = initElement(this.viewContainerRef);
     const id: ID = buildId<ID>(this.route, this.service.keys());
     this.load(id);

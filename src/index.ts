@@ -1,5 +1,31 @@
 import {ActivatedRoute, Router} from '@angular/router';
 
+export interface DataMap<V> {
+  [key: string]: V;
+}
+export function isAuthorized<T, V>(ur: T, router?: Router, to?: string, url?: string, m?: DataMap<V>, home?: string) {
+  if (!ur) {
+    if (to && to.length > 0) {
+      router.navigate([to]);
+    }
+    return false;
+  } else {
+    if (!m) {
+      return true;
+    } else {
+      const p = m[url];
+      if (p) {
+        return true;
+      } else {
+        if (home && home.length > 0) {
+          router.navigate([home]);
+        }
+        return false;
+      }
+    }
+  }
+}
+
 export function getUrlParam(route: ActivatedRoute): any {
   if (!route) {
     return null;
