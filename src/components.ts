@@ -153,9 +153,7 @@ export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> {
       loading?: LoadingService) {
     super(sv, param, showError, getLocale, loading);
     this.onInit = this.onInit.bind(this);
-    this.ngOnInit = this.onInit;
   }
-  ngOnInit: () => void;
   onInit() {
     this.form = initElement(this.viewContainerRef);
     const id: ID = buildId<ID>(this.route, this.keys);
@@ -585,7 +583,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       com.postSave(result, isBackO);
       com.running = false;
       hideLoading(com.loading);
-    }).then(err => {
+    }).catch(err => {
       error(err, com.resourceService.value, com.showError);
       com.running = false;
       hideLoading(com.loading);
@@ -682,9 +680,7 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
     loading?: LoadingService, status?: EditStatusConfig, patchable?: boolean, ignoreDate?: boolean, backOnSaveSuccess?: boolean) {
     super(service, param, showMessage, showError, confirm, getLocale, uis, loading, status, patchable, ignoreDate, backOnSaveSuccess);
     this.onInit = this.onInit.bind(this);
-    this.ngOnInit = this.onInit;
   }
-  ngOnInit: () => void;
   onInit() {
     const fi = (this.ui ? this.ui.registerEvents : null);
     this.form = initElement(this.viewContainerRef, fi);
@@ -948,7 +944,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       com.showResults(s, sr);
       com.running = false;
       hideLoading(com.loading);
-    }).then(err => {
+    }).catch(err => {
       error(err, com.resourceService.value, com.showError);
       com.running = false;
       hideLoading(com.loading);
@@ -1083,10 +1079,8 @@ export class SearchComponent<T, S extends SearchModel> extends BaseSearchCompone
     super(sv, param, showMessage, showError, getLocale, uis, loading);
     this.autoSearch = getAutoSearch(param);
     this.onInit = this.onInit.bind(this);
-    this.ngOnInit = this.onInit;
   }
   protected autoSearch = true;
-  ngOnInit: () => void;
   onInit() {
     const fi = (this.ui ? this.ui.registerEvents : null);
     this.form = initElement(this.viewContainerRef, fi);
@@ -1199,7 +1193,7 @@ export class BaseDiffApprComponent<T, ID> {
         com.showError(r['error_internal'], r['error']);
       }
       com.end();
-    }).then(err => {
+    }).catch(err => {
       com.handleError(err);
       com.end();
     });
@@ -1258,9 +1252,7 @@ export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
     loading?: LoadingService, protected status?: DiffStatusConfig) {
     super(service, param, showMessage, showError, loading, status);
     this.onInit = this.onInit.bind(this);
-    this.ngOnInit = this.onInit;
   }
-  ngOnInit: () => void;
   onInit() {
     this.form = initElement(this.viewContainerRef);
     const id: ID = buildId<ID>(this.route, this.service.keys());
