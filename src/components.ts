@@ -1,9 +1,8 @@
-import {ActivatedRoute} from '@angular/router';
 import {clone, equalAll, makeDiff, setAll, setValue} from 'reflectx';
 import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResults, getDisplayFields, handleAppend, handleSortEvent, initSearchable, mergeSearchModel, more, optimizeSearchModel, reset, showPaging} from 'search-utilities';
-import {buildFromUrl, buildId, initElement} from './angular';
-import {Attributes, createEditStatus, EditStatusConfig, error, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewParameter, ViewService} from './core';
-import {createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig, ViewContainerRef} from './core';
+import {ActivatedRoute, buildFromUrl, buildId, initElement} from './angular';
+import {Attributes, createEditStatus, EditStatusConfig, error, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService} from './core';
+import {createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig} from './core';
 import {formatDiffModel, showDiff} from './diff';
 import {build, createModel, EditParameter, GenericService, handleStatus, handleVersion, ResultInfo} from './edit';
 import {format, json} from './formatter';

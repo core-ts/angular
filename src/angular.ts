@@ -1,9 +1,15 @@
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {ViewContainerRef} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
 import {Headers} from './core';
 import {focusFirstElement} from './formutil';
 
+export declare type Params = {
+  [key: string]: any;
+};
+export interface ActivatedRoute {
+  /** An observable of the matrix parameters scoped to this route. */
+  params: any;
+}
 export function getId<ID>(route: ActivatedRoute, keys?: string[], id?: ID): ID {
   if (id) {
     return id;
