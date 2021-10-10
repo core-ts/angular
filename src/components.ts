@@ -749,6 +749,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   protected searchFn: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>;
   protected service: SearchService<T, S>;
   // Pagination
+  view?: string;
   nextPageToken?: string;
   initPageSize = 20;
   pageSize = 20;
@@ -794,6 +795,9 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   deleteConfirm: string;
   deleteFailed: string;
 
+  changeView(v: string, event?: any): void {
+    this.view = v;
+  }
   toggleFilter(event: any): void {
     this.hideFilter = !this.hideFilter;
   }
