@@ -14,7 +14,7 @@ export interface SearchPermission {
 export interface LocaleFormatter<T> {
   format(obj: T, locale: Locale): T;
 }
-export interface SearchModel {
+export interface Filter {
   page?: number;
   limit?: number;
   firstLimit?: number;
@@ -31,7 +31,7 @@ export interface SearchResult<T> {
   nextPageToken?: string;
   last?: boolean;
 }
-export interface SearchService<T, S extends SearchModel> {
+export interface SearchService<T, S extends Filter> {
   keys?(): string[];
   search(s: S, limit?: number, offset?: number|string, fields?: string[]): Promise<SearchResult<T>>;
 }

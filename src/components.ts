@@ -1,7 +1,7 @@
 import {clone, equalAll, makeDiff, setAll, setValue} from 'reflectx';
-import {addParametersIntoUrl, append, buildSearchMessage, changePage, changePageSize, formatResults, getDisplayFields, handleAppend, handleSortEvent, initSearchable, mergeSearchModel, more, optimizeSearchModel, reset, showPaging} from 'search-utilities';
+import {addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, initFilter, mergeFilter, more, optimizeFilter, reset, showPaging} from 'search-utilities';
 import {ActivatedRoute, buildFromUrl, buildId, initElement} from './angular';
-import {Attributes, createEditStatus, EditStatusConfig, error, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchModel, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService} from './core';
+import {Attributes, createEditStatus, EditStatusConfig, error, Filter, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService} from './core';
 import {createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig} from './core';
 import {formatDiffModel, showDiff} from './diff';
 import {build, createModel, EditParameter, GenericService, handleStatus, handleVersion, ResultInfo} from './edit';
@@ -130,7 +130,9 @@ export class BaseViewComponent<T, ID> extends RootComponent {
       return this.name;
     }
     const n = getModelName(this.form);
-    if (!n || n.length === 0) {
+    if (n && n.length > 0) {
+      return n;
+    } else {
       return 'model';
     }
   }
@@ -688,7 +690,7 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
     this.load(id);
   }
 }
-export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent {
+export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   constructor(sv: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
       param: ResourceService|SearchParameter,
       showMessage?: (msg: string, option?: string) => void,
@@ -697,7 +699,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       uis?: UIService,
       loading?: LoadingService) {
     super(getResource(param), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading));
-    this.model = {} as any;
+    this.filter = {} as any;
 
     if (sv) {
       if (typeof sv === 'function') {
@@ -714,15 +716,15 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     this.showMessage = getMsgFunc(param, showMessage);
 
     this.toggleFilter = this.toggleFilter.bind(this);
-    this.mergeSearchModel = this.mergeSearchModel.bind(this);
+    this.mergeFilter = this.mergeFilter.bind(this);
     this.load = this.load.bind(this);
     this.getSearchForm = this.getSearchForm.bind(this);
     this.setSearchForm = this.setSearchForm.bind(this);
 
-    this.setSearchModel = this.setSearchModel.bind(this);
-    this.getOriginalSearchModel = this.getOriginalSearchModel.bind(this);
-    this.getSearchModel = this.getSearchModel.bind(this);
-    this.getDisplayFields = this.getDisplayFields.bind(this);
+    this.setFilter = this.setFilter.bind(this);
+    this.getOriginalFilter = this.getOriginalFilter.bind(this);
+    this.getFilter = this.getFilter.bind(this);
+    this.getFields = this.getFields.bind(this);
 
     this.pageSizeChanged = this.pageSizeChanged.bind(this);
     this.searchOnClick = this.searchOnClick.bind(this);
@@ -767,15 +769,15 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
 
   keys: string[];
   format?: (obj: T, locale: Locale) => T;
-  displayFields: string[];
-  initDisplayFields: boolean;
+  fields: string[];
+  initFields: boolean;
   sequenceNo = 'sequenceNo';
   triggerSearch: boolean;
   tmpPageIndex: number;
   loadTime: Date;
   loadPage = 1;
 
-  model?: S;
+  filter?: S;
   list?: T[];
   excluding: string[]|number[];
   hideFilter: boolean;
@@ -801,14 +803,14 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
   toggleFilter(event: any): void {
     this.hideFilter = !this.hideFilter;
   }
-  mergeSearchModel(obj: S, b?: S, arrs?: string[]|any): S {
-    return mergeSearchModel(obj, b, this.pageSizes, arrs);
+  mergeFilter(obj: S, b?: S, arrs?: string[]|any): S {
+    return mergeFilter(obj, b, this.pageSizes, arrs);
   }
   load(s: S, autoSearch: boolean): void {
     this.loadTime = new Date();
-    const obj2 = initSearchable(s, this);
+    const obj2 = initFilter(s, this);
     this.loadPage = this.pageIndex;
-    this.setSearchModel(obj2);
+    this.setFilter(obj2);
     const com = this;
     if (autoSearch) {
       setTimeout(() => {
@@ -817,7 +819,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     }
   }
   protected getModelName(): string {
-    return 'model';
+    return 'filter';
   }
   protected setSearchForm(form: HTMLFormElement): void {
     this.form = form;
@@ -827,11 +829,11 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     return this.form;
   }
 
-  setSearchModel(obj: S): void {
-    this.model = obj;
+  setFilter(obj: S): void {
+    this.filter = obj;
   }
 
-  getSearchModel(): S {
+  getFilter(): S {
     let locale: Locale;
     if (this.getLocale) {
       locale = this.getLocale();
@@ -839,12 +841,12 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     if (!locale) {
       locale = enLocale;
     }
-    let obj = this.model;
+    let obj = this.filter;
     if (this.ui) {
       const obj2 = this.ui.decodeFromForm(this.getSearchForm(), locale, this.getCurrencyCode());
       obj = obj2 ? obj2 : {};
     }
-    const obj3 = optimizeSearchModel(obj, this, this.getDisplayFields());
+    const obj3 = optimizeFilter(obj, this, this.getFields());
     if (this.excluding) {
       obj3.excluding = this.excluding;
     }
@@ -861,21 +863,21 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     */
     return obj3;
   }
-  getOriginalSearchModel(): S {
-    return this.model;
+  getOriginalFilter(): S {
+    return this.filter;
   }
 
-  protected getDisplayFields(): string[] {
-    if (this.displayFields) {
-      return this.displayFields;
+  protected getFields(): string[] {
+    if (this.fields) {
+      return this.fields;
     }
-    if (!this.initDisplayFields) {
+    if (!this.initFields) {
       if (this.getSearchForm()) {
-        this.displayFields = getDisplayFields(this.getSearchForm());
+        this.fields = getFields(this.getSearchForm());
       }
-      this.initDisplayFields = true;
+      this.initFields = true;
     }
-    return this.displayFields;
+    return this.fields;
   }
   onPageSizeChanged(event: Event): void {
     const ctrl = event.currentTarget as HTMLInputElement;
@@ -887,7 +889,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     this.doSearch();
   }
   clearKeyworkOnClick = () => {
-    this.model.q = '';
+    this.filter.q = '';
   }
   searchOnClick(event: Event): void {
     if (event && !this.getSearchForm()) {
@@ -909,7 +911,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     if (listForm && this.ui) {
       this.ui.removeFormError(listForm);
     }
-    const s: S = this.getSearchModel();
+    const s: S = this.getFilter();
     const com = this;
     this.validateSearch(s, () => {
       if (com.running) {
@@ -923,28 +925,28 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       com.search(s);
     });
   }
-  search(se: S) {
-    const s = clone(se);
+  search(ft: S) {
+    const s = clone(ft);
     let page = this.pageIndex;
     if (!page || page < 1) {
       page = 1;
     }
     let offset: number;
-    if (se.firstLimit && se.firstLimit > 0) {
-      offset = se.limit * (page - 2) + se.firstLimit;
+    if (ft.firstLimit && ft.firstLimit > 0) {
+      offset = ft.limit * (page - 2) + ft.firstLimit;
     } else {
-      offset = se.limit * (page - 1);
+      offset = ft.limit * (page - 1);
     }
-    const limit = (page <= 1 && se.firstLimit && se.firstLimit > 0 ? se.firstLimit : se.limit);
+    const limit = (page <= 1 && ft.firstLimit && ft.firstLimit > 0 ? ft.firstLimit : ft.limit);
     const next = (this.nextPageToken && this.nextPageToken.length > 0 ? this.nextPageToken : offset);
-    const fields = se.fields;
-    delete se['page'];
-    delete se['fields'];
-    delete se['limit'];
-    delete se['firstLimit'];
+    const fields = ft.fields;
+    delete ft['page'];
+    delete ft['fields'];
+    delete ft['limit'];
+    delete ft['firstLimit'];
     const fn = this.searchFn ? this.searchFn : this.service.search;
     const com = this;
-    fn(se, limit, next, fields).then(sr => {
+    fn(ft, limit, next, fields).then(sr => {
       com.showResults(s, sr);
       com.running = false;
       hideLoading(com.loading);
@@ -954,7 +956,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       hideLoading(com.loading);
     });
   }
-  validateSearch(se: S, callback: () => void): void {
+  validateSearch(ft: S, callback: () => void): void {
     let valid = true;
     const listForm = this.getSearchForm();
     if (listForm) {
@@ -1005,7 +1007,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
       showPaging(com, s.limit, sr.list, sr.total);
       com.setList(results);
       com.tmpPageIndex = s.page;
-      this.showMessage(buildSearchMessage(this.resourceService, s.page, s.limit, sr.list, sr.total));
+      this.showMessage(buildMessage(this.resourceService, s.page, s.limit, sr.list, sr.total));
     }
     this.running = false;
     hideLoading(com.loading);
@@ -1071,7 +1073,7 @@ export class BaseSearchComponent<T, S extends SearchModel> extends BaseComponent
     this.doSearch();
   }
 }
-export class SearchComponent<T, S extends SearchModel> extends BaseSearchComponent<T, S> {
+export class SearchComponent<T, S extends Filter> extends BaseSearchComponent<T, S> {
   constructor(protected viewContainerRef: ViewContainerRef,
       sv: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
       param: ResourceService|SearchParameter,
@@ -1088,7 +1090,7 @@ export class SearchComponent<T, S extends SearchModel> extends BaseSearchCompone
   onInit() {
     const fi = (this.ui ? this.ui.registerEvents : null);
     this.form = initElement(this.viewContainerRef, fi);
-    const s = this.mergeSearchModel(buildFromUrl<S>());
+    const s = this.mergeFilter(buildFromUrl<S>());
     this.load(s, this.autoSearch);
   }
 }
