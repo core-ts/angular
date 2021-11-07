@@ -98,23 +98,23 @@ export class HttpRequest {
     this.patch = this.patch.bind(this);
   }
   get<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
-    const x = (this.getOptions? this.getOptions() : undefined)
+    const x = (this.getOptions ? this.getOptions() : undefined);
     return this.http.get<T>(url, opts ? opts : x).toPromise();
   }
   delete<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
-    const x = (this.getOptions? this.getOptions() : undefined)
+    const x = (this.getOptions ? this.getOptions() : undefined);
     return this.http.delete<T>(url, opts ? opts : x).toPromise();
   }
   post<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
-    const x = (this.getOptions? this.getOptions() : undefined)
+    const x = (this.getOptions ? this.getOptions() : undefined);
     return this.http.post<T>(url, obj, opts ? opts : x).toPromise();
   }
   put<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
-    const x = (this.getOptions? this.getOptions() : undefined)
+    const x = (this.getOptions ? this.getOptions() : undefined);
     return this.http.put<T>(url, obj, opts ? opts : x).toPromise();
   }
   patch<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
-    const x = (this.getOptions? this.getOptions() : undefined)
+    const x = (this.getOptions ? this.getOptions() : undefined);
     return this.http.patch<T>(url, obj, opts ? opts : x).toPromise();
   }
 }
