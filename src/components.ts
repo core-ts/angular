@@ -501,8 +501,8 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         return obj;
       }
     }
-    const obj: any = {};
-    return obj;
+    const obj2: any = {};
+    return obj2;
   }
 
   newOnClick(event?: Event): void {
@@ -724,7 +724,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       if (typeof sv === 'function') {
         this.searchFn = sv;
       } else {
-        this.searchFn = sv.search
+        this.searchFn = sv.search;
         // this.service = sv;
         if (sv.keys) {
           this.keys = sv.keys();
