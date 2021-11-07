@@ -12,9 +12,9 @@
     "@angular/common": "^8.1.3",
     "@angular/core": "^8.1.3",
     "@angular/router": "^8.1.3",
-    "reflectx": "^0.0.9",
+    "reflectx": "^0.0.10",
     "rxjs": "^7.4.0",
-    "search-utilities": "^0.0.13",
+    "search-utilities": "^0.0.14",
     "tslint": "5.10.0",
     "typescript": "^3.8.3"
   },
