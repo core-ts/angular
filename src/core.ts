@@ -53,7 +53,7 @@ export interface ViewParameter {
 export interface ViewService<T, ID> {
   metadata?(): Attributes;
   keys?(): string[];
-  load(id: ID, ctx?: any): Promise<T>;
+  load(id: ID, ctx?: any): Promise<T|null|undefined>;
 }
 
 export interface EditStatusConfig {
@@ -136,18 +136,18 @@ export class resources {
   static format1 = / |,|\$|€|£|¥|'|٬|،| /g;
   static format2 = / |\.|\$|€|£|¥|'|٬|،| /g;
   static currency?: (currencyCode: string) => Currency;
-  static formatNumber?: (value: number, scale: number, locale: Locale) => string;
+  static formatNumber?: (value: number, scale?: number, locale?: Locale) => string;
   static formatPhone?: (phone: string) => string;
   static formatFax?: (fax: string) => string;
   static options?: () => { headers?: Headers };
 
-  static removePhoneFormat(phone: string): string {
+  static removePhoneFormat?(phone: string): string {
     if (phone) {
       return phone.replace(resources._preg, '');
     }
     return phone;
   }
-  static removeFaxFormat(fax: string): string {
+  static removeFaxFormat?(fax: string): string {
     if (fax) {
       return fax.replace(resources._preg, '');
     }
@@ -170,7 +170,7 @@ export interface ResourceService {
 }
 export interface Message {
   message: string;
-  title?: string;
+  title: string;
   yes?: string;
   no?: string;
 }
@@ -183,7 +183,7 @@ export function getString(key: string, gv: StringMap|((key: string) => string)):
 }
 export function message(gv: StringMap|((key: string) => string), msg: string, title?: string, yes?: string, no?: string): Message {
   const m2 = (msg && msg.length > 0 ? getString(msg, gv) : '');
-    const m: Message = { message: m2 };
+    const m: Message = { message: m2, title: '' };
     if (title && title.length > 0) {
       m.title = getString(title, gv);
     }
@@ -231,12 +231,12 @@ export interface ErrorMessage {
 }
 export interface UIService {
   getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean;
-  decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string): any;
+  decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string|null): any;
 
-  validateForm(form: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
+  validateForm(form?: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
   removeFormError(form: HTMLFormElement): void;
   removeError(el: HTMLInputElement): void;
-  showFormError(form: HTMLFormElement, errors: ErrorMessage[], focusFirst?: boolean): ErrorMessage[];
+  showFormError(form?: HTMLFormElement, errors?: ErrorMessage[], focusFirst?: boolean): ErrorMessage[];
   buildErrorMessage(errors: ErrorMessage[]): string;
 
   registerEvents?(form: HTMLFormElement): void;
@@ -298,7 +298,7 @@ export function error(err: any, gv: StringMap|((key: string) => string), ae: (ms
     ae(msg, title);
   }
 }
-export function getModelName(form: HTMLFormElement): string {
+export function getModelName(form?: HTMLFormElement): string {
   if (form) {
     const a = form.getAttribute('model-name');
     if (a && a.length > 0) {
@@ -317,26 +317,29 @@ export function getModelName(form: HTMLFormElement): string {
 export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
   try {
     const element = e.target as HTMLInputElement;
-    const container = element.form.childNodes[1] as HTMLElement;
-    const elementRect = element.getBoundingClientRect();
-    const absoluteElementTop = elementRect.top + window.pageYOffset;
-    const middle = absoluteElementTop - (window.innerHeight / 2);
-    const scrollTop = container.scrollTop;
-    const timeOut = isUseTimeOut ? 300 : 0;
-    const isChrome = navigator.userAgent.search('Chrome') > 0;
-    setTimeout(() => {
-      if (isChrome) {
-        const scrollPosition = scrollTop === 0 ? (elementRect.top + 64) : (scrollTop + middle);
-        container.scrollTo(0, Math.abs(scrollPosition));
-      } else {
-        container.scrollTo(0, Math.abs(scrollTop + middle));
-      }
-    }, timeOut);
+    const form = element.form;
+    if (form) {
+      const container = form.childNodes[1] as HTMLElement;
+      const elementRect = element.getBoundingClientRect();
+      const absoluteElementTop = elementRect.top + window.pageYOffset;
+      const middle = absoluteElementTop - (window.innerHeight / 2);
+      const scrollTop = container.scrollTop;
+      const timeOut = isUseTimeOut ? 300 : 0;
+      const isChrome = navigator.userAgent.search('Chrome') > 0;
+      setTimeout(() => {
+        if (isChrome) {
+          const scrollPosition = scrollTop === 0 ? (elementRect.top + 64) : (scrollTop + middle);
+          container.scrollTo(0, Math.abs(scrollPosition));
+        } else {
+          container.scrollTo(0, Math.abs(scrollTop + middle));
+        }
+      }, timeOut);
+    }
   } catch (e) {
     console.log(e);
   }
 };
-export function showLoading(loading: LoadingService|((firstTime?: boolean) => void)): void {
+export function showLoading(loading?: LoadingService|((firstTime?: boolean) => void)): void {
   if (loading) {
     if (typeof loading === 'function') {
       loading();
@@ -345,7 +348,7 @@ export function showLoading(loading: LoadingService|((firstTime?: boolean) => vo
     }
   }
 }
-export function hideLoading(loading: LoadingService|(() => void)): void {
+export function hideLoading(loading?: LoadingService|(() => void)): void {
   if (loading) {
     if (typeof loading === 'function') {
       loading();

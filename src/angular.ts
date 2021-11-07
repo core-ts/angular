@@ -7,14 +7,14 @@ export interface ActivatedRoute {
   /** An observable of the matrix parameters scoped to this route. */
   params: any;
 }
-export function getId<ID>(route: ActivatedRoute, keys?: string[], id?: ID): ID {
+export function getId<ID>(route: ActivatedRoute, keys?: string[], id?: ID): ID|null {
   if (id) {
     return id;
   } else {
     return buildId(route, keys);
   }
 }
-export function buildId<ID>(route: ActivatedRoute, keys?: string[]): ID {
+export function buildId<ID>(route: ActivatedRoute, keys?: string[]): ID|null {
   if (!route) {
     return null;
   }
@@ -43,9 +43,9 @@ export function buildId<ID>(route: ActivatedRoute, keys?: string[]): ID {
   }
   return id;
 }
-export function initElement(viewContainerRef?: ViewContainerRef|any, initMat?: (f: HTMLFormElement) => void): HTMLFormElement {
+export function initElement(viewContainerRef?: ViewContainerRef|any, initMat?: (f: HTMLFormElement) => void): HTMLFormElement|undefined {
   if (!viewContainerRef) {
-    return null;
+    return undefined;
   }
   let nativeElement = viewContainerRef;
   if (viewContainerRef.element && viewContainerRef.element.nativeElement) {
@@ -58,6 +58,7 @@ export function initElement(viewContainerRef?: ViewContainerRef|any, initMat?: (
     }
     return form;
   }
+  return undefined;
 }
 export function initForm(form: HTMLFormElement, initMat?: (f: HTMLFormElement) => void): HTMLFormElement {
   if (form) {
@@ -97,18 +98,23 @@ export class HttpRequest {
     this.patch = this.patch.bind(this);
   }
   get<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
-    return this.http.get<T>(url, opts ? opts : this.getOptions()).toPromise();
+    const x = (this.getOptions? this.getOptions() : undefined)
+    return this.http.get<T>(url, opts ? opts : x).toPromise();
   }
   delete<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
-    return this.http.delete<T>(url, opts ? opts : this.getOptions()).toPromise();
+    const x = (this.getOptions? this.getOptions() : undefined)
+    return this.http.delete<T>(url, opts ? opts : x).toPromise();
   }
   post<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
-    return this.http.post<T>(url, obj, opts ? opts : this.getOptions()).toPromise();
+    const x = (this.getOptions? this.getOptions() : undefined)
+    return this.http.post<T>(url, obj, opts ? opts : x).toPromise();
   }
   put<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
-    return this.http.put<T>(url, obj, opts ? opts : this.getOptions()).toPromise();
+    const x = (this.getOptions? this.getOptions() : undefined)
+    return this.http.put<T>(url, obj, opts ? opts : x).toPromise();
   }
   patch<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
-    return this.http.patch<T>(url, obj, opts ? opts : this.getOptions()).toPromise();
+    const x = (this.getOptions? this.getOptions() : undefined)
+    return this.http.patch<T>(url, obj, opts ? opts : x).toPromise();
   }
 }

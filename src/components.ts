@@ -25,26 +25,34 @@ export class RootComponent {
   constructor(protected resourceService: ResourceService, protected getLocale?: (profile?: string) => Locale) {
     if (resourceService) {
       this.resource = resourceService.resource();
+    } else {
+      this.resource = {} as any;
     }
     this.currencySymbol = this.currencySymbol.bind(this);
     this.getCurrencyCode = this.getCurrencyCode.bind(this);
     this.back = this.back.bind(this);
   }
   resource: StringMap;
-  protected includeCurrencySymbol: boolean;
-  protected running: boolean;
+  protected includeCurrencySymbol?: boolean;
+  protected running?: boolean;
   protected form?: HTMLFormElement;
 
   back(): void {
     window.history.back();
   }
 
-  protected currencySymbol(): boolean {
+  protected currencySymbol(): boolean|undefined {
     return this.includeCurrencySymbol;
   }
 
-  protected getCurrencyCode(): string {
-    return (this.form ? this.form.getAttribute('currency-code') : null);
+  protected getCurrencyCode(): string|undefined {
+    if (this.form) {
+      const x = this.form.getAttribute('currency-code');
+      if (x) {
+        return x;
+      }
+    }
+    return undefined;
   }
 }
 export class BaseViewComponent<T, ID> extends RootComponent {
@@ -60,9 +68,9 @@ export class BaseViewComponent<T, ID> extends RootComponent {
       if (typeof sv === 'function') {
         this.loadData = sv;
       } else {
-        this.service = sv;
-        if (this.service.metadata) {
-          const m = this.service.metadata();
+        this.loadData = sv.load;
+        if (sv.metadata) {
+          const m = sv.metadata();
           if (m) {
             // this.metadata = m;
             const meta = build(m, ignoreDate);
@@ -73,7 +81,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
     }
     this.getModelName = this.getModelName.bind(this);
     const n = this.getModelName();
-    this[n] = {} as any;
+    (this as any)[n] = {} as any;
     this.load = this.load.bind(this);
     this.showModel = this.showModel.bind(this);
     this.getModel = this.getModel.bind(this);
@@ -82,9 +90,9 @@ export class BaseViewComponent<T, ID> extends RootComponent {
   protected name?: string;
   protected loading?: LoadingService;
   protected showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void;
-  protected loadData: (id: ID, ctx?: any) => Promise<T>;
-  protected service: ViewService<T, ID>;
-  protected keys: string[];
+  protected loadData?: (id: ID, ctx?: any) => Promise<T|null|undefined>;
+  // protected service?: ViewService<T, ID>;
+  protected keys?: string[];
   // protected metadata?: Attributes;
 
   load(_id: ID, callback?: (m: T, showF: (model: T) => void) => void) {
@@ -93,29 +101,30 @@ export class BaseViewComponent<T, ID> extends RootComponent {
       this.running = true;
       showLoading(this.loading);
       const com = this;
-      const fn = (this.loadData ? this.loadData : this.service.load);
-      fn(id).then(obj => {
-        if (obj) {
-          if (callback) {
-            callback(obj, com.showModel);
+      if (this.loadData) {
+        this.loadData(id).then(obj => {
+          if (obj) {
+            if (callback) {
+              callback(obj, com.showModel);
+            } else {
+              com.showModel(obj);
+            }
           } else {
-            com.showModel(obj);
+            com.handleNotFound(com.form);
           }
-        } else {
-          com.handleNotFound(com.form);
-        }
-        com.running = false;
-        hideLoading(com.loading);
-      }).catch(err => {
-        const data = (err &&  err.response) ? err.response : err;
-        if (data && data.status === 404) {
-          com.handleNotFound(com.form);
-        } else {
-          error(err, com.resourceService.value, com.showError);
-        }
-        com.running = false;
-        hideLoading(com.loading);
-      });
+          com.running = false;
+          hideLoading(com.loading);
+        }).catch(err => {
+          const data = (err &&  err.response) ? err.response : err;
+          if (data && data.status === 404) {
+            com.handleNotFound(com.form);
+          } else {
+            error(err, com.resourceService.value, com.showError);
+          }
+          com.running = false;
+          hideLoading(com.loading);
+        });
+      }
     }
   }
   protected handleNotFound(form?: HTMLFormElement): void {
@@ -138,11 +147,11 @@ export class BaseViewComponent<T, ID> extends RootComponent {
   }
   protected showModel(model: T): void {
     const name = this.getModelName();
-    this[name] = model;
+    (this as any)[name] = model;
   }
   getModel(): T {
     const name = this.getModelName();
-    const model = this[name];
+    const model = (this as any)[name];
     return model;
   }
 }
@@ -158,8 +167,10 @@ export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> {
   }
   onInit() {
     this.form = initElement(this.viewContainerRef);
-    const id: ID = buildId<ID>(this.route, this.keys);
-    this.load(id);
+    const id: ID|null = buildId<ID>(this.route, this.keys);
+    if (id) {
+      this.load(id);
+    }
   }
 }
 interface BaseUIService {
@@ -201,6 +212,8 @@ export class BaseComponent extends RootComponent {
     const n = getModelName(this.form);
     if (!n || n.length === 0) {
       return 'model';
+    } else {
+      return n;
     }
     // return 'state';
   }
@@ -219,8 +232,8 @@ export class BaseComponent extends RootComponent {
       locale = enLocale;
     }
     const ctrl = e.currentTarget as HTMLInputElement;
-    let modelName = this.getModelName();
-    if (!modelName) {
+    let modelName: string|null = this.getModelName();
+    if (!modelName && ctrl.form) {
       modelName = ctrl.form.getAttribute('model-name');
     }
     const type = ctrl.getAttribute('type');
@@ -231,20 +244,22 @@ export class BaseComponent extends RootComponent {
     if (this.uiS1 && ctrl.nodeName === 'SELECT' && ctrl.value && ctrl.classList.contains('invalid')) {
       this.uiS1.removeError(ctrl);
     }
-    const ex = this[modelName];
-    const dataField = ctrl.getAttribute('data-field');
-    const field = (dataField ? dataField : ctrl.name);
-    if (type && type.toLowerCase() === 'checkbox') {
-      const v = valueOfCheckbox(ctrl);
-      setValue(ex, field, v);
-    } else {
-      let v = ctrl.value;
-      if (this.uiS1) {
-        v = this.uiS1.getValue(ctrl, locale) as string;
-      }
-      // tslint:disable-next-line:triple-equals
-      if (ctrl.value != v) {
+    if (modelName) {
+      const ex = (this as any)[modelName];
+      const dataField = ctrl.getAttribute('data-field');
+      const field = (dataField ? dataField : ctrl.name);
+      if (type && type.toLowerCase() === 'checkbox') {
+        const v = valueOfCheckbox(ctrl);
         setValue(ex, field, v);
+      } else {
+        let v = ctrl.value;
+        if (this.uiS1) {
+          v = this.uiS1.getValue(ctrl, locale) as string;
+        }
+        // tslint:disable-next-line:triple-equals
+        if (ctrl.value != v) {
+          setValue(ex, field, v);
+        }
       }
     }
   }
@@ -271,7 +286,6 @@ export class MessageComponent extends BaseComponent {
     this.showError = this.showError.bind(this);
     this.hideMessage = this.hideMessage.bind(this);
   }
-  resource: StringMap;
   message = '';
   alertClass = '';
 
@@ -338,7 +352,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
 
     this.getModelName = this.getModelName.bind(this);
     const n = this.getModelName();
-    this[n] = {} as any;
+    (this as any)[n] = {} as any;
     this.load = this.load.bind(this);
     this.resetState = this.resetState.bind(this);
     this.handleNotFound = this.handleNotFound.bind(this);
@@ -362,21 +376,21 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.addable = true;
   }
   protected name?: string;
-  protected status?: EditStatusConfig;
+  protected status: EditStatusConfig;
   protected showMessage: (msg: string, option?: string) => void;
   protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void;
   protected confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
   protected ui?: UIService;
   protected metadata?: Attributes;
   protected metamodel?: MetaModel;
-  protected keys: string[];
+  protected keys?: string[];
   protected version?: string;
 
-  newMode: boolean;
-  setBack: boolean;
+  newMode?: boolean;
+  setBack?: boolean;
   patchable = true;
   backOnSuccess = true;
-  protected orginalModel: T;
+  protected orginalModel?: T;
 
   addable?: boolean;
   readOnly?: boolean;
@@ -415,7 +429,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       });
     } else {
       this.newMode = true;
-      this.orginalModel = null;
+      this.orginalModel = undefined;
       const obj = this.createModel();
       if (callback) {
         callback(obj, this.showModel);
@@ -424,7 +438,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       }
     }
   }
-  protected resetState(newMod: boolean, model: T, originalModel: T) {
+  protected resetState(newMod: boolean, model: T, originalModel: T|undefined) {
     this.newMode = newMod;
     this.orginalModel = originalModel;
     this.formatModel(model);
@@ -453,20 +467,22 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     const n = getModelName(this.form);
     if (!n || n.length === 0) {
       return 'model';
+    } else {
+      return n;
     }
   }
   protected showModel(model: T): void {
     const n = this.getModelName();
-    this[n] = model;
+    (this as any)[n] = model;
   }
   getRawModel(): T {
     const name = this.getModelName();
-    const model = this[name];
+    const model = (this as any)[name];
     return model;
   }
   getModel(): T {
     const name = this.getModelName();
-    const model = this[name];
+    const model = (this as any)[name];
     const obj = clone(model);
     if (this.metamodel) {
       let locale: Locale = enLocale;
@@ -478,14 +494,15 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     return obj;
   }
   protected createModel(): T {
-    const metadata = this.service.metadata();
-    if (metadata) {
-      const obj = createModel<T>(metadata);
-      return obj;
-    } else {
-      const obj: any = {};
-      return obj;
+    if (this.service.metadata) {
+      const metadata = this.service.metadata();
+      if (metadata) {
+        const obj = createModel<T>(metadata);
+        return obj;
+      }
     }
+    const obj: any = {};
+    return obj;
   }
 
   newOnClick(event?: Event): void {
@@ -495,7 +512,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         this.form = ctrl.form;
       }
     }
-    this.resetState(true, this.createModel(), null);
+    this.resetState(true, this.createModel(), undefined);
     const u = this.ui;
     const f = this.form;
     if (u && f) {
@@ -506,7 +523,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   }
   saveOnClick(event?: Event, isBack?: boolean): void {
     if (!this.form && event && event.currentTarget) {
-      this.form = (event.currentTarget as HTMLInputElement).form;
+      this.form = (event.currentTarget as HTMLInputElement).form as any;
     }
     if (isBack) {
       this.onSave(isBack);
@@ -631,7 +648,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       result.message = errors[0].message;
     }
     const t = this.resourceService.value('error');
-    this.showError(result.message, t);
+    this.showError(result.message ? result.message : 'Error', t);
   }
   protected postSave(res: number|ResultInfo<T>, backOnSave: boolean): void {
     this.running = false;
@@ -684,10 +701,12 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
     this.onInit = this.onInit.bind(this);
   }
   onInit() {
-    const fi = (this.ui ? this.ui.registerEvents : null);
+    const fi = (this.ui ? this.ui.registerEvents : undefined);
     this.form = initElement(this.viewContainerRef, fi);
-    const id: ID = buildId<ID>(this.route, this.keys);
-    this.load(id);
+    const id: ID|null = buildId<ID>(this.route, this.keys);
+    if (id) {
+      this.load(id);
+    }
   }
 }
 export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
@@ -705,9 +724,10 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       if (typeof sv === 'function') {
         this.searchFn = sv;
       } else {
-        this.service = sv;
-        if (this.service.keys) {
-          this.keys = this.service.keys();
+        this.searchFn = sv.search
+        // this.service = sv;
+        if (sv.keys) {
+          this.keys = sv.keys();
         }
       }
     }
@@ -748,40 +768,40 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   protected showMessage: (msg: string, option?: string) => void;
   protected showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
   protected ui?: UIService;
-  protected searchFn: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>;
-  protected service: SearchService<T, S>;
+  protected searchFn?: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>;
+  // protected service: SearchService<T, S>;
   // Pagination
   view?: string;
   nextPageToken?: string;
   initPageSize = 20;
   pageSize = 20;
   pageIndex = 1;
-  itemTotal: number;
-  pageTotal: number;
-  showPaging: boolean;
-  append: boolean;
-  appendMode: boolean;
-  appendable: boolean;
+  itemTotal?: number;
+  pageTotal?: number;
+  showPaging?: boolean;
+  append?: boolean;
+  appendMode?: boolean;
+  appendable?: boolean;
   // Sortable
-  sortField: string;
-  sortType: string;
-  sortTarget: HTMLElement; // HTML element
+  sortField?: string;
+  sortType?: string;
+  sortTarget?: HTMLElement; // HTML element
 
-  keys: string[];
-  format?: (obj: T, locale: Locale) => T;
-  fields: string[];
-  initFields: boolean;
+  keys?: string[];
+  format?: (obj: T, locale?: Locale) => T;
+  fields?: string[];
+  initFields?: boolean;
   sequenceNo = 'sequenceNo';
-  triggerSearch: boolean;
-  tmpPageIndex: number;
-  loadTime: Date;
+  triggerSearch?: boolean;
+  tmpPageIndex?: number;
+  loadTime?: Date;
   loadPage = 1;
 
-  filter?: S;
+  filter: S;
   list?: T[];
-  excluding: string[]|number[];
-  hideFilter: boolean;
-  ignoreUrlParam: boolean;
+  excluding?: string[]|number[];
+  hideFilter?: boolean;
+  ignoreUrlParam?: boolean;
 
   pageMaxSize = 7;
   pageSizes: number[] = [10, 20, 40, 60, 100, 200, 400, 1000];
@@ -825,7 +845,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     this.form = form;
   }
 
-  protected getSearchForm(): HTMLFormElement {
+  protected getSearchForm(): HTMLFormElement|undefined {
     return this.form;
   }
 
@@ -834,7 +854,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   }
 
   getFilter(): S {
-    let locale: Locale;
+    let locale: Locale|undefined;
     if (this.getLocale) {
       locale = this.getLocale();
     }
@@ -842,8 +862,9 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       locale = enLocale;
     }
     let obj = this.filter;
-    if (this.ui) {
-      const obj2 = this.ui.decodeFromForm(this.getSearchForm(), locale, this.getCurrencyCode());
+    const sf = this.getSearchForm();
+    if (this.ui && sf) {
+      const obj2 = this.ui.decodeFromForm(sf, locale, this.getCurrencyCode());
       obj = obj2 ? obj2 : {};
     }
     const obj3 = optimizeFilter(obj, this, this.getFields());
@@ -867,7 +888,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     return this.filter;
   }
 
-  protected getFields(): string[] {
+  protected getFields(): string[]|undefined {
     if (this.fields) {
       return this.fields;
     }
@@ -893,7 +914,10 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   }
   searchOnClick(event: Event): void {
     if (event && !this.getSearchForm()) {
-      this.setSearchForm((event.currentTarget as HTMLInputElement).form);
+      const f = (event.currentTarget as HTMLInputElement).form;
+      if (f) {
+        this.setSearchForm(f);
+      }
     }
     this.resetAndSearch();
   }
@@ -931,11 +955,13 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     if (!page || page < 1) {
       page = 1;
     }
-    let offset: number;
-    if (ft.firstLimit && ft.firstLimit > 0) {
-      offset = ft.limit * (page - 2) + ft.firstLimit;
-    } else {
-      offset = ft.limit * (page - 1);
+    let offset: number|undefined;
+    if (ft.limit) {
+      if (ft.firstLimit && ft.firstLimit > 0) {
+        offset = ft.limit * (page - 2) + ft.firstLimit;
+      } else {
+        offset = ft.limit * (page - 1);
+      }
     }
     const limit = (page <= 1 && ft.firstLimit && ft.firstLimit > 0 ? ft.firstLimit : ft.limit);
     const next = (this.nextPageToken && this.nextPageToken.length > 0 ? this.nextPageToken : offset);
@@ -944,17 +970,18 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     delete ft['fields'];
     delete ft['limit'];
     delete ft['firstLimit'];
-    const fn = this.searchFn ? this.searchFn : this.service.search;
     const com = this;
-    fn(ft, limit, next, fields).then(sr => {
-      com.showResults(s, sr);
-      com.running = false;
-      hideLoading(com.loading);
-    }).catch(err => {
-      error(err, com.resourceService.value, com.showError);
-      com.running = false;
-      hideLoading(com.loading);
-    });
+    if (this.searchFn) {
+      this.searchFn(ft, limit, next, fields).then(sr => {
+        com.showResults(s, sr);
+        com.running = false;
+        hideLoading(com.loading);
+      }).catch(err => {
+        error(err, com.resourceService.value, com.showError);
+        com.running = false;
+        hideLoading(com.loading);
+      });
+    }
   }
   validateSearch(ft: S, callback: () => void): void {
     let valid = true;
@@ -973,7 +1000,9 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     }
   }
   searchError(response: any): void {
-    this.pageIndex = this.tmpPageIndex;
+    if (this.tmpPageIndex) {
+      this.pageIndex = this.tmpPageIndex;
+    }
     error(response, this.resourceService.value, this.showError);
   }
   showResults(s: S, sr: SearchResult<T>): void {
@@ -993,21 +1022,23 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     }
     if (appendMode) {
       let limit = s.limit;
-      if (s.page <= 1 && s.firstLimit && s.firstLimit > 0) {
+      if ((!s.page || s.page <= 1) && s.firstLimit && s.firstLimit > 0) {
         limit = s.firstLimit;
       }
       com.nextPageToken = sr.nextPageToken;
-      handleAppend(com, limit, sr.list, sr.nextPageToken);
-      if (this.append && s.page > 1) {
+      handleAppend(com, sr.list, limit, sr.nextPageToken);
+      if (this.append && (s.page && s.page > 1)) {
         append(this.getList(), results);
       } else {
         this.setList(results);
       }
     } else {
-      showPaging(com, s.limit, sr.list, sr.total);
+      showPaging(com, sr.list, s.limit, sr.total);
       com.setList(results);
       com.tmpPageIndex = s.page;
-      this.showMessage(buildMessage(this.resourceService, s.page, s.limit, sr.list, sr.total));
+      if (s.limit) {
+        this.showMessage(buildMessage(this.resourceService, s.page, s.limit, sr.list, sr.total));
+      }
     }
     this.running = false;
     hideLoading(com.loading);
@@ -1020,7 +1051,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   setList(list: T[]): void {
     this.list = list;
   }
-  getList(): T[] {
+  getList(): T[]|undefined {
     return this.list;
   }
 
@@ -1038,7 +1069,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     }
     this.handleItemOnChecked(list);
   }
-  handleItemOnChecked(list: any[]) {
+  handleItemOnChecked(list?: any[]) {
   }
 
   sort(event: Event): void {
@@ -1088,7 +1119,7 @@ export class SearchComponent<T, S extends Filter> extends BaseSearchComponent<T,
   }
   protected autoSearch = true;
   onInit() {
-    const fi = (this.ui ? this.ui.registerEvents : null);
+    const fi = (this.ui ? this.ui.registerEvents : undefined);
     this.form = initElement(this.viewContainerRef, fi);
     const s = this.mergeFilter(buildFromUrl<S>());
     this.load(s, this.autoSearch);
@@ -1122,18 +1153,18 @@ export class BaseDiffApprComponent<T, ID> {
     this.load = this.load.bind(this);
     this.handleNotFound = this.handleNotFound.bind(this);
   }
-  protected status?: DiffStatusConfig;
+  protected status: DiffStatusConfig;
   protected showMessage: (msg: string, option?: string) => void;
   protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void;
   protected resourceService: ResourceService;
   protected loading?: LoadingService;
   resource: StringMap;
-  protected running: boolean;
-  protected form: HTMLFormElement;
-  protected id: ID;
-  origin: T;
+  protected running?: boolean;
+  protected form?: HTMLFormElement;
+  protected id?: ID;
+  origin?: T;
   value: T;
-  disabled: boolean;
+  disabled?: boolean;
 
   back(): void {
     window.history.back();
@@ -1153,7 +1184,9 @@ export class BaseDiffApprComponent<T, ID> {
           const formatdDiff = formatDiffModel(dobj, com.formatFields);
           com.value = formatdDiff.value;
           com.origin = formatdDiff.origin;
-          showDiff(com.form, formatdDiff.value, formatdDiff.origin);
+          if (com.form) {
+            showDiff(com.form, formatdDiff.value, formatdDiff.origin);
+          }
         }
         com.running = false;
         hideLoading(com.loading);
@@ -1172,7 +1205,7 @@ export class BaseDiffApprComponent<T, ID> {
   protected handleNotFound(form?: HTMLFormElement) {
     this.disabled = true;
     const r = this.resourceService.resource();
-    this.showError(r['error_not_found'], r.value['error']);
+    this.showError(r['error_not_found'], r['error']);
   }
 
   formatFields(value: T): T {
@@ -1186,23 +1219,25 @@ export class BaseDiffApprComponent<T, ID> {
     const com = this;
     const st = this.status;
     const r = this.resourceService.resource();
-    this.running = true;
-    showLoading(this.loading);
-    this.service.approve(this.id).then(status => {
-      if (status === st.success) {
-        com.showMessage(r['msg_approve_success']);
-      } else if (status === st.version_error) {
-        com.showMessage(r['msg_approve_version_error']);
-      } else if (status === st.not_found) {
-        com.handleNotFound(com.form);
-      } else {
-        com.showError(r['error_internal'], r['error']);
-      }
-      com.end();
-    }).catch(err => {
-      com.handleError(err);
-      com.end();
-    });
+    if (this.id) {
+      this.running = true;
+      showLoading(this.loading);
+      this.service.approve(this.id).then(status => {
+        if (status === st.success) {
+          com.showMessage(r['msg_approve_success']);
+        } else if (status === st.version_error) {
+          com.showMessage(r['msg_approve_version_error']);
+        } else if (status === st.not_found) {
+          com.handleNotFound(com.form);
+        } else {
+          com.showError(r['error_internal'], r['error']);
+        }
+        com.end();
+      }).catch(err => {
+        com.handleError(err);
+        com.end();
+      });
+    }
   }
   reject(event: Event) {
     event.preventDefault();
@@ -1212,23 +1247,25 @@ export class BaseDiffApprComponent<T, ID> {
     const com = this;
     const st = this.status;
     const r = this.resourceService.resource();
-    this.running = true;
-    showLoading(this.loading);
-    this.service.reject(this.id).then(status => {
-      if (status === st.success) {
-        com.showMessage(r['msg_reject_success']);
-      } else if (status === st.version_error) {
-        com.showMessage(r['msg_approve_version_error']);
-      } else if (status === st.not_found) {
-        com.handleNotFound(com.form);
-      } else {
-        com.showError(r['error_internal'], r['error']);
-      }
-      com.end();
-    }).catch(err => {
-      com.handleError(err);
-      com.end();
-    });
+    if (this.id) {
+      this.running = true;
+      showLoading(this.loading);
+      this.service.reject(this.id).then(status => {
+        if (status === st.success) {
+          com.showMessage(r['msg_reject_success']);
+        } else if (status === st.version_error) {
+          com.showMessage(r['msg_approve_version_error']);
+        } else if (status === st.not_found) {
+          com.handleNotFound(com.form);
+        } else {
+          com.showError(r['error_internal'], r['error']);
+        }
+        com.end();
+      }).catch(err => {
+        com.handleError(err);
+        com.end();
+      });
+    }
   }
   protected handleError(err: any): void {
     const r = this.resourceService.resource();
@@ -1255,13 +1292,15 @@ export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
     param: ResourceService|DiffParameter,
     showMessage?: (msg: string, option?: string) => void,
     showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-    loading?: LoadingService, protected status?: DiffStatusConfig) {
+    loading?: LoadingService, status?: DiffStatusConfig) {
     super(service, param, showMessage, showError, loading, status);
     this.onInit = this.onInit.bind(this);
   }
   onInit() {
     this.form = initElement(this.viewContainerRef);
-    const id: ID = buildId<ID>(this.route, this.service.keys());
-    this.load(id);
+    const id: ID|null = buildId<ID>(this.route, this.service.keys());
+    if (id) {
+      this.load(id);
+    }
   }
 }

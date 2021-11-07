@@ -1,10 +1,10 @@
 import {Attribute, Locale, MetaModel, resources} from './core';
 
-const _rd = '/Date(';
-const _rn = /-?\d+/;
+const _datereg = '/Date(';
+const _re = /-?\d+/;
 
-function toDate(v: string|number|Date): Date {
-  if (!v || v === '') {
+function toDate(v: any): Date | null | undefined {
+  if (!v) {
     return null;
   }
   if (v instanceof Date) {
@@ -12,22 +12,26 @@ function toDate(v: string|number|Date): Date {
   } else if (typeof v === 'number') {
     return new Date(v);
   }
-  const i = v.indexOf(_rd);
+  const i = v.indexOf(_datereg);
   if (i >= 0) {
-    const m = _rn.exec(v);
-    const d = parseInt(m[0], null);
-    return new Date(d);
+    const m = _re.exec(v);
+    if (m !== null) {
+      const d = parseInt(m[0], 10);
+      return new Date(d);
+    } else {
+      return null;
+    }
   } else {
-    if (isNaN(v as any)) {
+    if (isNaN(v)) {
       return new Date(v);
     } else {
-      const d = parseInt(v, null);
+      const d = parseInt(v, 10);
       return new Date(d);
     }
   }
 }
 
-function jsonToDate(obj, fields: string[]) {
+function jsonToDate(obj: any, fields?: string[]) {
   if (!obj || !fields) {
     return obj;
   }
@@ -41,21 +45,21 @@ function jsonToDate(obj, fields: string[]) {
   }
 }
 
-export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
+export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string|null) {
   jsonToDate(obj, m.dateFields);
   if (resources.removePhoneFormat && m.phoneFields && m.phoneFields.length > 0) {
     for (const p of m.phoneFields) {
-      const v = obj[p];
+      const v = (obj as any)[p];
       if (v) {
-        obj[p] = resources.removePhoneFormat(v);
+        (obj as any)[p] = resources.removePhoneFormat(v);
       }
     }
   }
   if (resources.removeFaxFormat && m.faxFields && m.faxFields.length > 0) {
     for (const p of m.faxFields) {
-      const v = obj[p];
+      const v = (obj as any)[p];
       if (v) {
-        obj[p] = resources.removeFaxFormat(v);
+        (obj as any)[p] = resources.removeFaxFormat(v);
       }
     }
   }
@@ -64,24 +68,24 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
   if (m.integerFields) {
     if (loc && loc.decimalSeparator !== '.') {
       for (const p of m.integerFields) {
-        let v = obj[p];
+        let v = (obj as any)[p];
         if (v && typeof v === 'string') {
           v = v.replace(r2, '');
           if (v.indexOf(loc.decimalSeparator) >= 0) {
             v = v.replace(loc.decimalSeparator, '.');
           }
           if (!isNaN(v)) {
-            obj[p] = parseFloat(v);
+            (obj as any)[p] = parseFloat(v);
           }
         }
       }
     } else {
       for (const p of m.integerFields) {
-        let v = obj[p];
+        let v = (obj as any)[p];
         if (v && typeof v === 'string') {
           v = v.replace(r1, '');
           if (!isNaN(v)) {
-            obj[p] = parseFloat(v);
+            (obj as any)[p] = parseFloat(v);
           }
         }
       }
@@ -90,7 +94,7 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
   if (m.numberFields) {
     if (loc && loc.decimalSeparator !== '.') {
       for (const p of m.numberFields) {
-        let v = obj[p];
+        let v = (obj as any)[p];
         if (v && typeof v === 'string') {
           v = v.replace(r2, '');
           if (v.indexOf(loc.decimalSeparator) >= 0) {
@@ -103,13 +107,13 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
             }
           }
           if (!isNaN(v)) {
-            obj[p] = parseFloat(v);
+            (obj as any)[p] = parseFloat(v);
           }
         }
       }
     } else {
       for (const p of m.numberFields) {
-        let v = obj[p];
+        let v = (obj as any)[p];
         if (v && typeof v === 'string') {
           v = v.replace(r1, '');
           if (v.indexOf('%') >= 0) {
@@ -119,7 +123,7 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
             }
           }
           if (!isNaN(v)) {
-            obj[p] = parseFloat(v);
+            (obj as any)[p] = parseFloat(v);
           }
         }
       }
@@ -131,7 +135,7 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
     }
     if (loc && loc.decimalSeparator !== '.') {
       for (const p of m.currencyFields) {
-        let v = obj[p];
+        let v = (obj as any)[p];
         if (v && typeof v === 'string') {
           if (resources.currency && cur) {
             const currency = resources.currency(cur);
@@ -147,13 +151,13 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
             v = v.replace(loc.decimalSeparator, '.');
           }
           if (!isNaN(v)) {
-            obj[p] = parseFloat(v);
+            (obj as any)[p] = parseFloat(v);
           }
         }
       }
     } else {
       for (const p of m.currencyFields) {
-        let v = obj[p];
+        let v = (obj as any)[p];
         if (v && typeof v === 'string') {
           v = v.replace(r1, '');
           if (resources.currency && cur) {
@@ -166,26 +170,26 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
             v = v.replace(loc.currencySymbol, '');
           }
           if (!isNaN(v)) {
-            obj[p] = parseFloat(v);
+            (obj as any)[p] = parseFloat(v);
           }
         }
       }
     }
   }
   if (m.objectFields) {
-    for (const objectField of m.objectFields) {
-      if (obj[objectField.attributeName]) {
-        json(obj[objectField.attributeName], objectField, loc, cur);
+    for (const of of m.objectFields) {
+      if (of.attributeName && (obj as any)[of.attributeName]) {
+        json((obj as any)[of.attributeName], of, loc, cur);
       }
     }
   }
   if (m.arrayFields) {
-    for (const arrayField of m.arrayFields) {
-      if (obj[arrayField.attributeName]) {
-        const arr = obj[arrayField.attributeName];
+    for (const af of m.arrayFields) {
+      if (af.attributeName && (obj as any)[af.attributeName]) {
+        const arr = (obj as any)[af.attributeName];
         if (Array.isArray(arr)) {
           for (const a of arr) {
-            json(a, arrayField, loc, cur);
+            json(a, af, loc, cur);
           }
         }
       }
@@ -193,38 +197,38 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string) {
   }
 }
 
-export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string, includingCurrencySymbol: boolean = false) {
+export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string|null, includingCurrencySymbol: boolean = false) {
   if (resources.formatPhone && m.phoneFields) {
     for (const p of m.phoneFields) {
-      const v = obj[p];
+      const v = (obj as any)[p];
       if (v) {
-        obj[p] = resources.formatPhone(v);
+        (obj as any)[p] = resources.formatPhone(v);
       }
     }
   }
   if (resources.formatFax && m.faxFields) {
     for (const p of m.faxFields) {
-      const v = obj[p];
+      const v = (obj as any)[p];
       if (v) {
-        obj[p] = resources.formatFax(v);
+        (obj as any)[p] = resources.formatFax(v);
       }
     }
   }
   if (resources.formatNumber) {
     if (m.integerFields) {
       for (const p of m.integerFields) {
-        const v = obj[p];
+        const v = (obj as any)[p];
         if (v && !isNaN(v)) {
           const attr: Attribute = m.attributes[p];
           if (attr && !attr.noformat && !attr.key && !attr.version) {
-            obj[p] = resources.formatNumber(v, attr.scale, loc);
+            (obj as any)[p] = resources.formatNumber(v, attr.scale, loc);
           }
         }
       }
     }
     if (m.numberFields) {
       for (const p of m.numberFields) {
-        const v = obj[p];
+        const v = (obj as any)[p];
         if (v && !isNaN(v)) {
           const attr: Attribute = m.attributes[p];
           if (attr && !attr.noformat && !attr.key && !attr.version) {
@@ -232,14 +236,14 @@ export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string, inclu
             if (attr.format === 'percentage') {
               z = z + '%';
             }
-            obj[p] = z;
+            (obj as any)[p] = z;
           }
         }
       }
     }
     if (m.currencyFields) {
       for (const p of m.currencyFields) {
-        const v = obj[p];
+        const v = (obj as any)[p];
         if (v && !isNaN(v)) {
           const attr: Attribute = m.attributes[p];
           if (attr && !attr.noformat && (cur || attr.scale) && !attr.key && !attr.version) {
@@ -272,7 +276,7 @@ export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string, inclu
                     break;
                 }
               }
-              obj[p] = v2;
+              (obj as any)[p] = v2;
             }
           }
         }
@@ -281,18 +285,22 @@ export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string, inclu
   }
   if (m.objectFields && m.objectFields.length > 0) {
     for (const p of m.objectFields) {
-      const v = obj[p.attributeName];
-      if (v) {
-        format(v, p, loc, cur, includingCurrencySymbol);
+      if (p.attributeName) {
+        const v = (obj as any)[p.attributeName];
+        if (v) {
+          format(v, p, loc, cur, includingCurrencySymbol);
+        }
       }
     }
   }
   if (m.arrayFields) {
     for (const p of m.arrayFields) {
-      const arr = obj[p.attributeName];
-      if (arr && Array.isArray(arr)) {
-        for (const a of arr) {
-          format(a, p, loc, cur, includingCurrencySymbol);
+      if (p.attributeName) {
+        const arr = (obj as any)[p.attributeName];
+        if (arr && Array.isArray(arr)) {
+          for (const a of arr) {
+            format(a, p, loc, cur, includingCurrencySymbol);
+          }
         }
       }
     }

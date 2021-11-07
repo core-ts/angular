@@ -5,7 +5,7 @@ export interface DataMap<V> {
 }
 export function isAuthorized<T, V>(ur: T, router?: Router, to?: string, url?: string, m?: DataMap<V>, home?: string) {
   if (!ur) {
-    if (to && to.length > 0) {
+    if (to && to.length > 0 && router) {
       router.navigate([to]);
     }
     return false;
@@ -13,11 +13,14 @@ export function isAuthorized<T, V>(ur: T, router?: Router, to?: string, url?: st
     if (!m) {
       return true;
     } else {
+      if (!url) {
+        return true;
+      }
       const p = m[url];
       if (p) {
         return true;
       } else {
-        if (home && home.length > 0) {
+        if (router && home && home.length > 0) {
           router.navigate([home]);
         }
         return false;

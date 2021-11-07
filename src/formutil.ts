@@ -1,4 +1,4 @@
-export function readOnly(form: HTMLFormElement): void {
+export function readOnly(form?: HTMLFormElement): void {
   if (!form) {
     return;
   }
@@ -64,14 +64,17 @@ export function focusFirstElement(form: HTMLFormElement): void {
     }
   }
 }
-export function focusFirstError(form: HTMLFormElement, className?: string): void {
+export function focusFirstError(form?: HTMLFormElement, className?: string): void {
+  if (!form) {
+    return;
+  }
   const len = form.length;
   if (className && className.length > 0) {
     for (let i = 0; i < len; i++) {
       const ctrl = form[i] as HTMLInputElement;
       const parent = ctrl.parentElement;
       if (ctrl.classList.contains(className)
-        || parent.classList.contains(className)) {
+        || parent && parent.classList.contains(className)) {
         ctrl.focus();
         ctrl.scrollIntoView();
         return;
@@ -83,7 +86,7 @@ export function focusFirstError(form: HTMLFormElement, className?: string): void
       const parent = ctrl.parentElement;
       if (ctrl.classList.contains('invalid')
         || ctrl.classList.contains('.ng-invalid')
-        || parent.classList.contains('invalid')) {
+        || parent && parent.classList.contains('invalid')) {
         ctrl.focus();
         ctrl.scrollIntoView();
         return;

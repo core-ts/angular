@@ -52,39 +52,41 @@ export function createModel<T>(attributes?: Attributes): T {
   const attrs = Object.keys(attributes);
   for (const k of attrs) {
     const attr = attributes[k];
-    switch (attr.type) {
-      case 'string':
-      case 'text':
-        obj[attr.name] = '';
-        break;
-      case 'integer':
-      case 'number':
-        obj[attr.name] = 0;
-        break;
-      case 'array':
-        obj[attr.name] = [];
-        break;
-      case 'boolean':
-        obj[attr.name] = false;
-        break;
-      case 'date':
-        obj[attr.name] = new Date();
-        break;
-      case 'object':
-        if (attr.typeof) {
-          const object = createModel(attr.typeof);
-          obj[attr.name] = object;
+    if (attr.name) {
+      switch (attr.type) {
+        case 'string':
+        case 'text':
+          obj[attr.name] = '';
           break;
-        } else {
-          obj[attr.name] = {};
+        case 'integer':
+        case 'number':
+          obj[attr.name] = 0;
           break;
-        }
-      case 'ObjectId':
-        obj[attr.name] = null;
-        break;
-      default:
-        obj[attr.name] = '';
-        break;
+        case 'array':
+          obj[attr.name] = [];
+          break;
+        case 'boolean':
+          obj[attr.name] = false;
+          break;
+        case 'date':
+          obj[attr.name] = new Date();
+          break;
+        case 'object':
+          if (attr.typeof) {
+            const object = createModel(attr.typeof);
+            obj[attr.name] = object;
+            break;
+          } else {
+            obj[attr.name] = {};
+            break;
+          }
+        case 'ObjectId':
+          obj[attr.name] = null;
+          break;
+        default:
+          obj[attr.name] = '';
+          break;
+      }
     }
   }
   return obj;
@@ -100,13 +102,13 @@ export function handleStatus(x: number|string, st: EditStatusConfig, gv: StringM
     se(getString('error_internal', gv), title);
   }
 }
-export function handleVersion<T>(obj: T, version: string): void {
+export function handleVersion<T>(obj: T, version?: string): void {
   if (obj && version && version.length > 0) {
-    const v = obj[version];
+    const v = (obj as any)[version];
     if (v && typeof v === 'number') {
-      obj[version] = v + 1;
+      (obj as any)[version] = v + 1;
     } else {
-      obj[version] = 1;
+      (obj as any)[version] = 1;
     }
   }
 }
