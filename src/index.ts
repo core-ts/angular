@@ -54,9 +54,12 @@ export function navigate(router: Router, stateTo: any, params?: any): void {
 }
 
 export * from './angular';
+export * from './formutil';
 export * from './core';
 export * from './edit';
 
 export * from './diff';
 export * from './components';
 export * from './formatter';
+export * from './search';
+export * from './reflect';

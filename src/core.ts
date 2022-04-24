@@ -129,6 +129,7 @@ export interface Headers {
 }
 // tslint:disable-next-line:class-name
 export class resources {
+  static limit = 24;
   static _cache: any = {};
   static cache = true;
   static ignoreDate?: boolean;
@@ -155,12 +156,12 @@ export class resources {
   }
 }
 
-export type DataType = 'ObjectId' | 'date' | 'datetime' | 'time'
-  | 'boolean' | 'number' | 'integer' | 'string' | 'text'
-  | 'object' | 'array' | 'binary'
-  | 'primitives' | 'booleans' | 'numbers' | 'integers' | 'strings' | 'dates' | 'datetimes' | 'times';
-export type FormatType = 'currency' | 'percentage' | 'email' | 'url' | 'phone' | 'fax' | 'ipv4' | 'ipv6';
-export type MatchType = 'equal' | 'prefix' | 'contain' | 'max' | 'min'; // contain: default for string, min: default for Date, number
+export type Type = 'ObjectId' | 'date' | 'datetime' | 'time'
+| 'boolean' | 'number' | 'integer' | 'string' | 'text'
+| 'object' | 'array' | 'binary'
+| 'primitives' | 'booleans' | 'numbers' | 'integers' | 'strings' | 'dates' | 'datetimes' | 'times';
+
+export type Format = 'currency' | 'percentage' | 'email' | 'url' | 'phone' | 'fax' | 'ipv4' | 'ipv6';
 
 export interface StringMap {
   [key: string]: string;
@@ -232,7 +233,7 @@ export interface ErrorMessage {
   message?: string;
 }
 export interface UIService {
-  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean|null|undefined;
+  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean;
   decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string|null): any;
 
   validateForm(form?: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
@@ -259,8 +260,8 @@ export interface Attributes {
 export interface Attribute {
   name?: string;
   field?: string;
-  type?: DataType;
-  format?: FormatType;
+  type?: Type;
+  format?: Format;
   key?: boolean;
   version?: boolean;
   ignored?: boolean;

@@ -1,6 +1,4 @@
-import {clone, equalAll, makeDiff, setAll, setValue} from 'reflectx';
-import {addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, initFilter, mergeFilter, more, optimizeFilter, reset, showPaging} from 'search-utilities';
-import {ActivatedRoute, buildFromUrl, buildId, initElement} from './angular';
+import {buildFromUrl, ActivatedRoute, buildId, initElement} from './angular';
 import {Attributes, createEditStatus, EditStatusConfig, error, Filter, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService} from './core';
 import {createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig} from './core';
 import {formatDiffModel, showDiff} from './diff';
@@ -8,6 +6,8 @@ import {build, createModel, EditParameter, GenericService, handleStatus, handleV
 import {format, json} from './formatter';
 import {focusFirstError, readOnly} from './formutil';
 import {getAutoSearch, getConfirmFunc, getDiffStatusFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
+import {clone, equalAll, makeDiff, setAll, setValue} from './reflect';
+import {addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, initFilter, mergeFilter, more, optimizeFilter, reset, showPaging} from './search';
 
 export const enLocale = {
   'id': 'en-US',
@@ -174,7 +174,7 @@ export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> {
   }
 }
 interface BaseUIService {
-  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean|null|undefined;
+  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean;
   removeError(el: HTMLInputElement): void;
 }
 export class BaseComponent extends RootComponent {
@@ -217,17 +217,17 @@ export class BaseComponent extends RootComponent {
     }
     // return 'state';
   }
-  protected includes(checkedList: Array<string|number>, v: string|number): boolean {
+  includes(checkedList: Array<string>|string, v: string): boolean {
     return v && checkedList &&  Array.isArray(checkedList) ? checkedList.includes(v) : false;
   }
-  protected updateState(event: Event) {
+  updateState(event: Event) {
     let locale: Locale = enLocale;
     if (this.getLocale) {
       locale = this.getLocale();
     }
     this.updateStateFlat(event, locale);
   }
-  protected updateStateFlat(e: Event, locale?: Locale) {
+  updateStateFlat(e: Event, locale?: Locale) {
     if (!locale) {
       locale = enLocale;
     }
@@ -401,6 +401,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   load(_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) {
     const id: any = _id;
     if (id && id !== '') {
+      
       const com = this;
       this.service.load(id).then(obj => {
         if (!obj) {
@@ -408,6 +409,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         } else {
           com.newMode = false;
           com.orginalModel = clone(obj);
+          
           com.formatModel(obj);
           if (callback) {
             callback(obj, com.showModel);
@@ -524,15 +526,19 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   saveOnClick(event?: Event, isBack?: boolean): void {
     if (!this.form && event && event.currentTarget) {
       this.form = (event.currentTarget as HTMLInputElement).form as any;
+      
+      
     }
     if (isBack) {
       this.onSave(isBack);
     } else {
+      
       this.onSave(this.backOnSuccess);
     }
   }
 
   onSave(isBack?: boolean) {
+    debugger
     const r = this.resourceService;
     if (this.newMode && this.addable !== true) {
       const msg = message(r.value, 'error_permission_add', 'error_permission');
@@ -548,7 +554,8 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       }
       const com = this;
       const obj = com.getModel();
-      if (!this.newMode) {
+      
+      if (!this.newMode) {        
         const diffObj = makeDiff(this.orginalModel, obj, this.keys, this.version);
         const l = Object.keys(diffObj).length;
         if (l === 0) {
@@ -704,9 +711,7 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
     const fi = (this.ui ? this.ui.registerEvents : undefined);
     this.form = initElement(this.viewContainerRef, fi);
     const id: ID|null = buildId<ID>(this.route, this.keys);
-    if (id) {
       this.load(id);
-    }
   }
 }
 export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
@@ -823,13 +828,14 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   toggleFilter(event: any): void {
     this.hideFilter = !this.hideFilter;
   }
-  mergeFilter(obj: S, b?: S, arrs?: string[]|any): S {
-    return mergeFilter(obj, b, this.pageSizes, arrs);
+  mergeFilter(obj: S, arrs?: string[]|any, b?: S): S {    
+    const s =  mergeFilter(obj, b, this.pageSizes, arrs);    
+    return s;
   }
   load(s: S, autoSearch: boolean): void {
     this.loadTime = new Date();
     const obj2 = initFilter(s, this);
-    this.loadPage = this.pageIndex;
+    this.loadPage = this.pageIndex;    
     this.setFilter(obj2);
     const com = this;
     if (autoSearch) {

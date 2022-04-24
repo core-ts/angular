@@ -1,5 +1,5 @@
-import {clone, diff} from 'reflectx';
 import {DiffModel} from './core';
+import {clone, diff} from './reflect';
 
 export function showDiff<T>(form: HTMLFormElement, value: T, origin?: T): void {
   if (!origin) {
