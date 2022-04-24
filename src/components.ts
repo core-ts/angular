@@ -174,7 +174,7 @@ export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> {
   }
 }
 interface BaseUIService {
-  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean;
+  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean|null|undefined;
   removeError(el: HTMLInputElement): void;
 }
 export class BaseComponent extends RootComponent {
