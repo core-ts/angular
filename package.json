@@ -1,7 +1,7 @@
 {
   "name": "angularx",
   "version": "0.0.13",
-  "description": "angularx",
+  "description": "angular",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
   "scripts": {
@@ -23,9 +23,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com/common-ts/angularx"
+    "url": "git@github.com/core-ts/angular"
   },
   "keywords": [
-    "angularx"
+    "angular"
   ]
 }
