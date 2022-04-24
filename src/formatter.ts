@@ -1,4 +1,4 @@
-import {Attribute, Locale, MetaModel, resources} from './core';
+import { Attribute, Locale, MetaModel, resources } from './core';
 
 const _datereg = '/Date(';
 const _re = /-?\d+/;
@@ -45,7 +45,7 @@ function jsonToDate(obj: any, fields?: string[]) {
   }
 }
 
-export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string|null) {
+export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string | null) {
   jsonToDate(obj, m.dateFields);
   if (resources.removePhoneFormat && m.phoneFields && m.phoneFields.length > 0) {
     for (const p of m.phoneFields) {
@@ -197,7 +197,7 @@ export function json<T>(obj: T, m: MetaModel, loc: Locale, cur?: string|null) {
   }
 }
 
-export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string|null, includingCurrencySymbol: boolean = false) {
+export function format<T>(obj: T, m: MetaModel, loc: Locale, cur?: string | null, includingCurrencySymbol: boolean = false) {
   if (resources.formatPhone && m.phoneFields) {
     for (const p of m.phoneFields) {
       const v = (obj as any)[p];

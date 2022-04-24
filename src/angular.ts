@@ -1,20 +1,21 @@
-import {HttpClient, HttpParams} from '@angular/common/http';
-import {ViewContainerRef} from '@angular/core';
-import {Headers} from './core';
-import {focusFirstElement} from './formutil';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { ViewContainerRef } from '@angular/core';
+import { lastValueFrom } from 'rxjs';
+import { Headers } from './core';
+import { focusFirstElement } from './formutil';
 
 export interface ActivatedRoute {
   /** An observable of the matrix parameters scoped to this route. */
   params: any;
 }
-export function getId<ID>(route: ActivatedRoute, keys?: string[], id?: ID): ID|null {
+export function getId<ID>(route: ActivatedRoute, keys?: string[], id?: ID): ID | null {
   if (id) {
     return id;
   } else {
     return buildId(route, keys);
   }
 }
-export function buildId<ID>(route: ActivatedRoute, keys?: string[]): ID|null {
+export function buildId<ID>(route: ActivatedRoute, keys?: string[]): ID | null {
   if (!route) {
     return null;
   }
@@ -43,7 +44,7 @@ export function buildId<ID>(route: ActivatedRoute, keys?: string[]): ID|null {
   }
   return id;
 }
-export function initElement(viewContainerRef?: ViewContainerRef|any, initMat?: (f: HTMLFormElement) => void): HTMLFormElement|undefined {
+export function initElement(viewContainerRef?: ViewContainerRef | any, initMat?: (f: HTMLFormElement) => void): HTMLFormElement | undefined {
   if (!viewContainerRef) {
     return undefined;
   }
@@ -82,7 +83,7 @@ export function buildParameters<T>(url: string): T {
     urlSearch = url.substr(i + 1);
   }
   const obj: any = {};
-  const httpParams = new HttpParams({fromString: urlSearch});
+  const httpParams = new HttpParams({ fromString: urlSearch });
   for (const key of httpParams.keys()) {
     obj[key] = httpParams.get(key);
   }
@@ -99,22 +100,22 @@ export class HttpRequest {
   }
   get<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
     const x = (this.getOptions ? this.getOptions() : undefined);
-    return this.http.get<T>(url, opts ? opts : x).toPromise();
+    return lastValueFrom(this.http.get<T>(url, opts ? opts : x));
   }
   delete<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
     const x = (this.getOptions ? this.getOptions() : undefined);
-    return this.http.delete<T>(url, opts ? opts : x).toPromise();
+    return lastValueFrom(this.http.delete<T>(url, opts ? opts : x));
   }
   post<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
     const x = (this.getOptions ? this.getOptions() : undefined);
-    return this.http.post<T>(url, obj, opts ? opts : x).toPromise();
+    return lastValueFrom(this.http.post<T>(url, obj, opts ? opts : x));
   }
   put<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
     const x = (this.getOptions ? this.getOptions() : undefined);
-    return this.http.put<T>(url, obj, opts ? opts : x).toPromise();
+    return lastValueFrom(this.http.put<T>(url, obj, opts ? opts : x));
   }
   patch<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
     const x = (this.getOptions ? this.getOptions() : undefined);
-    return this.http.patch<T>(url, obj, opts ? opts : x).toPromise();
+    return lastValueFrom(this.http.patch<T>(url, obj, opts ? opts : x));
   }
 }

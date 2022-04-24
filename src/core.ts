@@ -23,7 +23,7 @@ export interface Filter {
 
   q?: string;
   excluding?: any;
-  refId?: string|number;
+  refId?: string | number;
 }
 export interface SearchResult<T> {
   total?: number;
@@ -33,7 +33,7 @@ export interface SearchResult<T> {
 }
 export interface SearchService<T, S extends Filter> {
   keys?(): string[];
-  search(s: S, limit?: number, offset?: number|string, fields?: string[]): Promise<SearchResult<T>>;
+  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>>;
 }
 export interface SearchParameter {
   resource: ResourceService;
@@ -51,18 +51,18 @@ export interface ViewParameter {
   loading?: LoadingService;
 }
 export interface ViewService<T, ID> {
-  metadata?(): Attributes;
+  metadata?(): Attributes | undefined;
   keys?(): string[];
-  load(id: ID, ctx?: any): Promise<T|null|undefined>;
+  load(id: ID, ctx?: any): Promise<T | null>;
 }
 
 export interface EditStatusConfig {
-  duplicate_key: number|string;
-  not_found: number|string;
-  success: number|string;
-  version_error: number|string;
-  error?: number|string;
-  data_corrupt?: number|string;
+  duplicate_key: number | string;
+  not_found: number | string;
+  success: number | string;
+  version_error: number | string;
+  error?: number | string;
+  data_corrupt?: number | string;
 }
 export function createEditStatus(status?: EditStatusConfig): EditStatusConfig {
   if (status) {
@@ -79,10 +79,10 @@ export function createEditStatus(status?: EditStatusConfig): EditStatusConfig {
   return s;
 }
 export interface DiffStatusConfig {
-  not_found: number|string;
-  success: number|string;
-  version_error: number|string;
-  error?: number|string;
+  not_found: number | string;
+  success: number | string;
+  version_error: number | string;
+  error?: number | string;
 }
 export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
   if (status) {
@@ -113,8 +113,8 @@ export interface DiffService<T, ID> {
   diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>;
 }
 export interface ApprService<ID> {
-  approve(id: ID, ctx?: any): Promise<number|string>;
-  reject(id: ID, ctx?: any): Promise<number|string>;
+  approve(id: ID, ctx?: any): Promise<number | string>;
+  reject(id: ID, ctx?: any): Promise<number | string>;
 }
 export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {
 }
@@ -136,7 +136,7 @@ export class resources {
   private static _preg = / |\-|\.|\(|\)/g;
   static format1 = / |,|\$|€|£|¥|'|٬|،| /g;
   static format2 = / |\.|\$|€|£|¥|'|٬|،| /g;
-  static currency?: (currencyCode: string) => Currency;
+  static currency?: (currencyCode: string) => Currency | undefined;
   static formatNumber?: (value: number, scale?: number, locale?: Locale) => string;
   static formatPhone?: (phone: string) => string;
   static formatFax?: (fax: string) => string;
@@ -157,9 +157,9 @@ export class resources {
 }
 
 export type Type = 'ObjectId' | 'date' | 'datetime' | 'time'
-| 'boolean' | 'number' | 'integer' | 'string' | 'text'
-| 'object' | 'array' | 'binary'
-| 'primitives' | 'booleans' | 'numbers' | 'integers' | 'strings' | 'dates' | 'datetimes' | 'times';
+  | 'boolean' | 'number' | 'integer' | 'string' | 'text'
+  | 'object' | 'array' | 'binary'
+  | 'primitives' | 'booleans' | 'numbers' | 'integers' | 'strings' | 'dates' | 'datetimes' | 'times';
 
 export type Format = 'currency' | 'percentage' | 'email' | 'url' | 'phone' | 'fax' | 'ipv4' | 'ipv6';
 
@@ -177,34 +177,34 @@ export interface Message {
   yes?: string;
   no?: string;
 }
-export function getString(key: string, gv: StringMap|((key: string) => string)): string {
+export function getString(key: string, gv: StringMap | ((key: string) => string)): string {
   if (typeof gv === 'function') {
     return gv(key);
   } else {
     return gv[key];
   }
 }
-export function message(gv: StringMap|((key: string) => string), msg: string, title?: string, yes?: string, no?: string): Message {
+export function message(gv: StringMap | ((key: string) => string), msg: string, title?: string, yes?: string, no?: string): Message {
   const m2 = (msg && msg.length > 0 ? getString(msg, gv) : '');
-    const m: Message = { message: m2, title: '' };
-    if (title && title.length > 0) {
-      m.title = getString(title, gv);
-    }
-    if (yes && yes.length > 0) {
-      m.yes = getString(yes, gv);
-    }
-    if (no && no.length > 0) {
-      m.no = getString(no, gv);
-    }
-    return m;
+  const m: Message = { message: m2, title: '' };
+  if (title && title.length > 0) {
+    m.title = getString(title, gv);
+  }
+  if (yes && yes.length > 0) {
+    m.yes = getString(yes, gv);
+  }
+  if (no && no.length > 0) {
+    m.no = getString(no, gv);
+  }
+  return m;
 }
-export function messageByHttpStatus(status: number, gv: StringMap|((key: string) => string)): string {
+export function messageByHttpStatus(status: number, gv: StringMap | ((key: string) => string)): string {
   const k = 'status_' + status;
   let msg = getString(k, gv);
-    if (!msg || msg.length === 0) {
-      msg = getString('error_internal', gv);
-    }
-    return msg;
+  if (!msg || msg.length === 0) {
+    msg = getString('error_internal', gv);
+  }
+  return msg;
 }
 
 export interface Locale {
@@ -229,12 +229,12 @@ export interface LoadingService {
 export interface ErrorMessage {
   field: string;
   code: string;
-  param?: string|number|Date;
+  param?: string | number | Date;
   message?: string;
 }
 export interface UIService {
-  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean;
-  decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string|null): any;
+  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string | number | boolean | null | undefined;
+  decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string | null): any;
 
   validateForm(form?: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
   removeFormError(form: HTMLFormElement): void;
@@ -283,7 +283,7 @@ export interface MetaModel {
   arrayFields?: MetaModel[];
   version?: string;
 }
-export function error(err: any, gv: StringMap|((key: string) => string), ae: (msg: string, header?: string, detail?: string, callback?: () => void) => void) {
+export function error(err: any, gv: StringMap | ((key: string) => string), ae: (msg: string, header?: string, detail?: string, callback?: () => void) => void) {
   const title = getString('error', gv);
   let msg = getString('error_internal', gv);
   if (!err) {
@@ -342,7 +342,7 @@ export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
     console.log(e);
   }
 };
-export function showLoading(loading?: LoadingService|((firstTime?: boolean) => void)): void {
+export function showLoading(loading?: LoadingService | ((firstTime?: boolean) => void)): void {
   if (loading) {
     if (typeof loading === 'function') {
       loading();
@@ -351,7 +351,7 @@ export function showLoading(loading?: LoadingService|((firstTime?: boolean) => v
     }
   }
 }
-export function hideLoading(loading?: LoadingService|(() => void)): void {
+export function hideLoading(loading?: LoadingService | (() => void)): void {
   if (loading) {
     if (typeof loading === 'function') {
       loading();

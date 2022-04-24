@@ -1,13 +1,13 @@
-import {buildFromUrl, ActivatedRoute, buildId, initElement} from './angular';
-import {Attributes, createEditStatus, EditStatusConfig, error, Filter, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService} from './core';
-import {createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig} from './core';
-import {formatDiffModel, showDiff} from './diff';
-import {build, createModel, EditParameter, GenericService, handleStatus, handleVersion, ResultInfo} from './edit';
-import {format, json} from './formatter';
-import {focusFirstError, readOnly} from './formutil';
-import {getAutoSearch, getConfirmFunc, getDiffStatusFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService} from './input';
-import {clone, equalAll, makeDiff, setAll, setValue} from './reflect';
-import {addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, initFilter, mergeFilter, more, optimizeFilter, reset, showPaging} from './search';
+import { buildFromUrl, ActivatedRoute, buildId, initElement } from './angular';
+import { Attributes, createEditStatus, EditStatusConfig, error, Filter, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService } from './core';
+import { createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig } from './core';
+import { formatDiffModel, showDiff } from './diff';
+import { build, createModel, EditParameter, GenericService, handleStatus, handleVersion, ResultInfo } from './edit';
+import { format, json } from './formatter';
+import { focusFirstError, readOnly } from './formutil';
+import { getAutoSearch, getConfirmFunc, getDiffStatusFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService } from './input';
+import { clone, equalAll, makeDiff, setAll, setValue } from './reflect';
+import { addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, initFilter, mergeFilter, more, optimizeFilter, reset, showPaging } from './search';
 
 export const enLocale = {
   'id': 'en-US',
@@ -41,11 +41,11 @@ export class RootComponent {
     window.history.back();
   }
 
-  protected currencySymbol(): boolean|undefined {
+  protected currencySymbol(): boolean | undefined {
     return this.includeCurrencySymbol;
   }
 
-  protected getCurrencyCode(): string|undefined {
+  protected getCurrencyCode(): string | undefined {
     if (this.form) {
       const x = this.form.getAttribute('currency-code');
       if (x) {
@@ -56,11 +56,11 @@ export class RootComponent {
   }
 }
 export class BaseViewComponent<T, ID> extends RootComponent {
-  constructor(sv: ((id: ID, ctx?: any) => Promise<T>)|ViewService<T, ID>,
-      param: ResourceService|ViewParameter,
-      showError?: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
-      getLocale?: (profile?: string) => Locale,
-      loading?: LoadingService, ignoreDate?: boolean) {
+  constructor(sv: ((id: ID, ctx?: any) => Promise<T>) | ViewService<T, ID>,
+    param: ResourceService | ViewParameter,
+    showError?: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
+    getLocale?: (profile?: string) => Locale,
+    loading?: LoadingService, ignoreDate?: boolean) {
     super(getResource(param), getLocaleFunc(param, getLocale));
     this.showError = getErrorFunc(param, showError);
     this.loading = getLoadingFunc(param, loading);
@@ -90,7 +90,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
   protected name?: string;
   protected loading?: LoadingService;
   protected showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void;
-  protected loadData?: (id: ID, ctx?: any) => Promise<T|null|undefined>;
+  protected loadData?: (id: ID, ctx?: any) => Promise<T | null | undefined>;
   // protected service?: ViewService<T, ID>;
   protected keys?: string[];
   // protected metadata?: Attributes;
@@ -115,7 +115,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
           com.running = false;
           hideLoading(com.loading);
         }).catch(err => {
-          const data = (err &&  err.response) ? err.response : err;
+          const data = (err && err.response) ? err.response : err;
           if (data && data.status === 404) {
             com.handleNotFound(com.form);
           } else {
@@ -157,31 +157,31 @@ export class BaseViewComponent<T, ID> extends RootComponent {
 }
 export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> {
   constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute,
-      sv: ((id: ID, ctx?: any) => Promise<T>)|ViewService<T, ID>,
-      param: ResourceService|ViewParameter,
-      showError?: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
-      getLocale?: (profile?: string) => Locale,
-      loading?: LoadingService) {
+    sv: ((id: ID, ctx?: any) => Promise<T>) | ViewService<T, ID>,
+    param: ResourceService | ViewParameter,
+    showError?: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
+    getLocale?: (profile?: string) => Locale,
+    loading?: LoadingService) {
     super(sv, param, showError, getLocale, loading);
     this.onInit = this.onInit.bind(this);
   }
   onInit() {
     this.form = initElement(this.viewContainerRef);
-    const id: ID|null = buildId<ID>(this.route, this.keys);
+    const id: ID | null = buildId<ID>(this.route, this.keys);
     if (id) {
       this.load(id);
     }
   }
 }
 interface BaseUIService {
-  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string|number|boolean;
+  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string | number | boolean | null | undefined;
   removeError(el: HTMLInputElement): void;
 }
 export class BaseComponent extends RootComponent {
   constructor(resourceService: ResourceService,
-      getLocale?: (profile?: string) => Locale,
-      ui?: BaseUIService,
-      protected loading?: LoadingService) {
+    getLocale?: (profile?: string) => Locale,
+    ui?: BaseUIService,
+    protected loading?: LoadingService) {
     super(resourceService, getLocale);
     this.uiS1 = ui;
 
@@ -217,8 +217,8 @@ export class BaseComponent extends RootComponent {
     }
     // return 'state';
   }
-  includes(checkedList: Array<string>|string, v: string): boolean {
-    return v && checkedList &&  Array.isArray(checkedList) ? checkedList.includes(v) : false;
+  includes(checkedList: Array<string> | string, v: string): boolean {
+    return v && checkedList && Array.isArray(checkedList) ? checkedList.includes(v) : false;
   }
   updateState(event: Event) {
     let locale: Locale = enLocale;
@@ -232,7 +232,7 @@ export class BaseComponent extends RootComponent {
       locale = enLocale;
     }
     const ctrl = e.currentTarget as HTMLInputElement;
-    let modelName: string|null = this.getModelName();
+    let modelName: string | null = this.getModelName();
     if (!modelName && ctrl.form) {
       modelName = ctrl.form.getAttribute('model-name');
     }
@@ -264,7 +264,7 @@ export class BaseComponent extends RootComponent {
     }
   }
 }
-export function valueOfCheckbox(ctrl: HTMLInputElement): string|number|boolean {
+export function valueOfCheckbox(ctrl: HTMLInputElement): string | number | boolean {
   const ctrlOnValue = ctrl.getAttribute('data-on-value');
   const ctrlOffValue = ctrl.getAttribute('data-off-value');
   if (ctrlOnValue && ctrlOffValue) {
@@ -279,8 +279,8 @@ export class MessageComponent extends BaseComponent {
   constructor(
     resourceService: ResourceService,
     getLocale?: (profile?: string) => Locale,
-    ui?: UIService,
-    protected loading?: LoadingService) {
+    loading?: LoadingService,
+    ui?: UIService) {
     super(resourceService, getLocale, ui, loading);
     this.showMessage = this.showMessage.bind(this);
     this.showError = this.showError.bind(this);
@@ -304,15 +304,15 @@ export class MessageComponent extends BaseComponent {
 }
 
 export class BaseEditComponent<T, ID> extends BaseComponent {
-  constructor(protected service: GenericService<T, ID, number|ResultInfo<T>>, param: ResourceService|EditParameter,
-      showMessage?: (msg: string, option?: string) => void,
-      showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-      confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
-      getLocale?: (profile?: string) => Locale,
-      uis?: UIService,
-      loading?: LoadingService,
-      status?: EditStatusConfig,
-      patchable?: boolean, ignoreDate?: boolean, backOnSaveSuccess?: boolean) {
+  constructor(protected service: GenericService<T, ID, number | ResultInfo<T>>, param: ResourceService | EditParameter,
+    showMessage?: (msg: string, option?: string) => void,
+    showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+    confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
+    getLocale?: (profile?: string) => Locale,
+    uis?: UIService,
+    loading?: LoadingService,
+    status?: EditStatusConfig,
+    patchable?: boolean, ignoreDate?: boolean, backOnSaveSuccess?: boolean) {
     super(getResource(param), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading));
     this.ui = getUIService(param, uis);
     this.showError = getErrorFunc(param, showError);
@@ -398,10 +398,10 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
 
   insertSuccessMsg: string;
   updateSuccessMsg: string;
-  load(_id: ID, callback?: (m: T, showM: (m2: T) => void) => void) {
+  load(_id: ID | null | undefined, callback?: (m: T, showM: (m2: T) => void) => void) {
     const id: any = _id;
     if (id && id !== '') {
-      
+
       const com = this;
       this.service.load(id).then(obj => {
         if (!obj) {
@@ -409,7 +409,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         } else {
           com.newMode = false;
           com.orginalModel = clone(obj);
-          
+
           com.formatModel(obj);
           if (callback) {
             callback(obj, com.showModel);
@@ -420,7 +420,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         com.running = false;
         hideLoading(com.loading);
       }).catch(err => {
-        const data = (err &&  err.response) ? err.response : err;
+        const data = (err && err.response) ? err.response : err;
         if (data && data.status === 404) {
           com.handleNotFound(com.form);
         } else {
@@ -440,7 +440,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       }
     }
   }
-  protected resetState(newMod: boolean, model: T, originalModel: T|undefined) {
+  protected resetState(newMod: boolean, model: T, originalModel: T | undefined) {
     this.newMode = newMod;
     this.orginalModel = originalModel;
     this.formatModel(model);
@@ -526,13 +526,13 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   saveOnClick(event?: Event, isBack?: boolean): void {
     if (!this.form && event && event.currentTarget) {
       this.form = (event.currentTarget as HTMLInputElement).form as any;
-      
-      
+
+
     }
     if (isBack) {
       this.onSave(isBack);
     } else {
-      
+
       this.onSave(this.backOnSuccess);
     }
   }
@@ -554,8 +554,8 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       }
       const com = this;
       const obj = com.getModel();
-      
-      if (!this.newMode) {        
+
+      if (!this.newMode) {
         const diffObj = makeDiff(this.orginalModel, obj, this.keys, this.version);
         const l = Object.keys(diffObj).length;
         if (l === 0) {
@@ -657,7 +657,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     const t = this.resourceService.value('error');
     this.showError(result.message ? result.message : 'Error', t);
   }
-  protected postSave(res: number|ResultInfo<T>, backOnSave: boolean): void {
+  protected postSave(res: number | ResultInfo<T>, backOnSave: boolean): void {
     this.running = false;
     hideLoading(this.loading);
     const st = this.status;
@@ -697,7 +697,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   }
 }
 export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
-  constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute, service: GenericService<T, ID, number|ResultInfo<T>>, param: ResourceService|EditParameter,
+  constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute, service: GenericService<T, ID, number | ResultInfo<T>>, param: ResourceService | EditParameter,
     showMessage?: (msg: string, option?: string) => void,
     showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
     confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
@@ -710,18 +710,18 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
   onInit() {
     const fi = (this.ui ? this.ui.registerEvents : undefined);
     this.form = initElement(this.viewContainerRef, fi);
-    const id: ID|null = buildId<ID>(this.route, this.keys);
-      this.load(id);
+    const id: ID | null = buildId<ID>(this.route, this.keys);
+    this.load(id);
   }
 }
 export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
-  constructor(sv: ((s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
-      param: ResourceService|SearchParameter,
-      showMessage?: (msg: string, option?: string) => void,
-      showError?: (m: string, header?: string, detail?: string, callback?: () => void) => void,
-      getLocale?: (profile?: string) => Locale,
-      uis?: UIService,
-      loading?: LoadingService) {
+  constructor(sv: ((s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
+    param: ResourceService | SearchParameter,
+    showMessage?: (msg: string, option?: string) => void,
+    showError?: (m: string, header?: string, detail?: string, callback?: () => void) => void,
+    getLocale?: (profile?: string) => Locale,
+    uis?: UIService,
+    loading?: LoadingService) {
     super(getResource(param), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading));
     this.filter = {} as any;
 
@@ -773,7 +773,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   protected showMessage: (msg: string, option?: string) => void;
   protected showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
   protected ui?: UIService;
-  protected searchFn?: (s: S, limit?: number, offset?: number|string, fields?: string[]) => Promise<SearchResult<T>>;
+  protected searchFn?: (s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>;
   // protected service: SearchService<T, S>;
   // Pagination
   view?: string;
@@ -781,7 +781,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   initPageSize = 20;
   pageSize = 20;
   pageIndex = 1;
-  itemTotal?: number;
+  itemTotal: number = 0;
   pageTotal?: number;
   showPaging?: boolean;
   append?: boolean;
@@ -804,7 +804,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
 
   filter: S;
   list?: T[];
-  excluding?: string[]|number[];
+  excluding?: string[] | number[];
   hideFilter?: boolean;
   ignoreUrlParam?: boolean;
 
@@ -828,14 +828,14 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   toggleFilter(event: any): void {
     this.hideFilter = !this.hideFilter;
   }
-  mergeFilter(obj: S, arrs?: string[]|any, b?: S): S {    
-    const s =  mergeFilter(obj, b, this.pageSizes, arrs);    
+  mergeFilter(obj: S, arrs?: string[] | any, b?: S): S {
+    const s = mergeFilter(obj, b, this.pageSizes, arrs);
     return s;
   }
   load(s: S, autoSearch: boolean): void {
     this.loadTime = new Date();
     const obj2 = initFilter(s, this);
-    this.loadPage = this.pageIndex;    
+    this.loadPage = this.pageIndex;
     this.setFilter(obj2);
     const com = this;
     if (autoSearch) {
@@ -851,7 +851,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     this.form = form;
   }
 
-  protected getSearchForm(): HTMLFormElement|undefined {
+  protected getSearchForm(): HTMLFormElement | undefined {
     return this.form;
   }
 
@@ -860,7 +860,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   }
 
   getFilter(): S {
-    let locale: Locale|undefined;
+    let locale: Locale | undefined;
     if (this.getLocale) {
       locale = this.getLocale();
     }
@@ -894,7 +894,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     return this.filter;
   }
 
-  protected getFields(): string[]|undefined {
+  protected getFields(): string[] | undefined {
     if (this.fields) {
       return this.fields;
     }
@@ -961,7 +961,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     if (!page || page < 1) {
       page = 1;
     }
-    let offset: number|undefined;
+    let offset: number | undefined;
     if (ft.limit) {
       if (ft.firstLimit && ft.firstLimit > 0) {
         offset = ft.limit * (page - 2) + ft.firstLimit;
@@ -1057,7 +1057,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   setList(list: T[]): void {
     this.list = list;
   }
-  getList(): T[]|undefined {
+  getList(): T[] | undefined {
     return this.list;
   }
 
@@ -1112,13 +1112,13 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
 }
 export class SearchComponent<T, S extends Filter> extends BaseSearchComponent<T, S> {
   constructor(protected viewContainerRef: ViewContainerRef,
-      sv: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
-      param: ResourceService|SearchParameter,
-      showMessage?: (msg: string, option?: string) => void,
-      showError?: (m: string, header?: string, detail?: string, callback?: () => void) => void,
-      getLocale?: (profile?: string) => Locale,
-      uis?: UIService,
-      loading?: LoadingService) {
+    sv: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
+    param: ResourceService | SearchParameter,
+    showMessage?: (msg: string, option?: string) => void,
+    showError?: (m: string, header?: string, detail?: string, callback?: () => void) => void,
+    getLocale?: (profile?: string) => Locale,
+    uis?: UIService,
+    loading?: LoadingService) {
     super(sv, param, showMessage, showError, getLocale, uis, loading);
     this.autoSearch = getAutoSearch(param);
     this.onInit = this.onInit.bind(this);
@@ -1134,10 +1134,10 @@ export class SearchComponent<T, S extends Filter> extends BaseSearchComponent<T,
 
 export class BaseDiffApprComponent<T, ID> {
   constructor(protected service: DiffApprService<T, ID>,
-      param: ResourceService|DiffParameter,
-      showMessage?: (msg: string, option?: string) => void,
-      showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-      loading?: LoadingService, status?: DiffStatusConfig) {
+    param: ResourceService | DiffParameter,
+    showMessage?: (msg: string, option?: string) => void,
+    showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+    loading?: LoadingService, status?: DiffStatusConfig) {
     this.resourceService = getResource(param);
     this.resource = this.resourceService.resource();
     this.loading = getLoadingFunc(param, loading);
@@ -1197,7 +1197,7 @@ export class BaseDiffApprComponent<T, ID> {
         com.running = false;
         hideLoading(com.loading);
       }).catch(err => {
-        const data = (err &&  err.response) ? err.response : err;
+        const data = (err && err.response) ? err.response : err;
         if (data && data.status === 404) {
           com.handleNotFound(com.form);
         } else {
@@ -1275,7 +1275,7 @@ export class BaseDiffApprComponent<T, ID> {
   }
   protected handleError(err: any): void {
     const r = this.resourceService.resource();
-    const data = (err &&  err.response) ? err.response : err;
+    const data = (err && err.response) ? err.response : err;
     if (data && (data.status === 404 || data.status === 409)) {
       if (data.status === 404) {
         this.handleNotFound();
@@ -1295,7 +1295,7 @@ export class BaseDiffApprComponent<T, ID> {
 export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
   constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute,
     service: DiffApprService<T, ID>,
-    param: ResourceService|DiffParameter,
+    param: ResourceService | DiffParameter,
     showMessage?: (msg: string, option?: string) => void,
     showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
     loading?: LoadingService, status?: DiffStatusConfig) {
@@ -1304,7 +1304,7 @@ export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
   }
   onInit() {
     this.form = initElement(this.viewContainerRef);
-    const id: ID|null = buildId<ID>(this.route, this.service.keys());
+    const id: ID | null = buildId<ID>(this.route, this.service.keys());
     if (id) {
       this.load(id);
     }
