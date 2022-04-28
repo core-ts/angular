@@ -1,5 +1,5 @@
 import { buildFromUrl, ActivatedRoute, buildId, initElement } from './angular';
-import { Attributes, createEditStatus, EditStatusConfig, error, Filter, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService } from './core';
+import { Attributes, createEditStatus, EditStatusConfig, error, Filter, getModelName, handleToggle, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService } from './core';
 import { createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig } from './core';
 import { formatDiffModel, showDiff } from './diff';
 import { build, createModel, EditParameter, GenericService, handleStatus, handleVersion, ResultInfo } from './edit';
@@ -362,15 +362,14 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.getModel = this.getModel.bind(this);
     this.getRawModel = this.getRawModel.bind(this);
 
-    this.newOnClick = this.newOnClick.bind(this);
-    this.saveOnClick = this.saveOnClick.bind(this);
+    this.create = this.create.bind(this);
+    this.save = this.save.bind(this);
     this.onSave = this.onSave.bind(this);
     this.confirm = this.confirm.bind(this);
     this.validate = this.validate.bind(this);
-    this.save = this.save.bind(this);
+    this.doSave = this.doSave.bind(this);
     this.succeed = this.succeed.bind(this);
     this.successMessage = this.successMessage.bind(this);
-    this.save = this.save.bind(this);
     this.postSave = this.postSave.bind(this);
     this.handleDuplicateKey = this.handleDuplicateKey.bind(this);
     this.addable = true;
@@ -507,7 +506,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     return obj2;
   }
 
-  newOnClick(event?: Event): void {
+  create(event?: Event): void {
     if (!this.form && event && event.currentTarget) {
       const ctrl = event.currentTarget as HTMLInputElement;
       if (ctrl.form) {
@@ -523,16 +522,13 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       }, 100);
     }
   }
-  saveOnClick(event?: Event, isBack?: boolean): void {
+  save(event?: Event, isBack?: boolean): void {
     if (!this.form && event && event.currentTarget) {
       this.form = (event.currentTarget as HTMLInputElement).form as any;
-
-
     }
     if (isBack) {
       this.onSave(isBack);
     } else {
-
       this.onSave(this.backOnSuccess);
     }
   }
@@ -554,17 +550,16 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       }
       const com = this;
       const obj = com.getModel();
-
       if (!this.newMode) {
         const diffObj = makeDiff(this.orginalModel, obj, this.keys, this.version);
-        const l = Object.keys(diffObj).length;
+        const l = Object.keys(diffObj as any).length;
         if (l === 0) {
           this.showMessage(r.value('msg_no_change'));
         } else {
           com.validate(obj, () => {
             const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
             this.confirm(msg.message, msg.title, () => {
-              com.save(obj, diffObj, isBack);
+              com.doSave(obj, diffObj, isBack);
             }, msg.no, msg.yes);
           });
         }
@@ -572,7 +567,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         com.validate(obj, () => {
           const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
           this.confirm(msg.message, msg.title, () => {
-            com.save(obj, obj, isBack);
+            com.doSave(obj, obj, isBack);
           }, msg.no, msg.yes);
         });
       }
@@ -592,12 +587,12 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       callback(obj);
     }
   }
-  save(obj: T, body?: T, isBack?: boolean) {
+  doSave(obj: T, body?: Partial<T>, isBack?: boolean) {
     this.running = true;
     showLoading(this.loading);
     const isBackO = (isBack == null || isBack === undefined ? this.backOnSuccess : isBack);
     const com = this;
-    let m = obj;
+    let m: T | Partial<T> = obj;
     let fn = this.newMode ? this.service.insert : this.service.update;
     if (!this.newMode) {
       if (this.patchable === true && this.service.patch && body && Object.keys(body).length > 0) {
@@ -605,7 +600,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         fn = this.service.patch;
       }
     }
-    fn(m).then(result => {
+    fn(m as any).then(result => {
       com.postSave(result, isBackO);
       com.running = false;
       hideLoading(com.loading);
@@ -752,11 +747,11 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     this.getFields = this.getFields.bind(this);
 
     this.pageSizeChanged = this.pageSizeChanged.bind(this);
-    this.searchOnClick = this.searchOnClick.bind(this);
+    this.search = this.search.bind(this);
 
     this.resetAndSearch = this.resetAndSearch.bind(this);
     this.doSearch = this.doSearch.bind(this);
-    this.search = this.search.bind(this);
+    this.callSearch = this.callSearch.bind(this);
     this.validateSearch = this.validateSearch.bind(this);
     this.showResults = this.showResults.bind(this);
     this.setList = this.setList.bind(this);
@@ -826,7 +821,9 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     this.view = v;
   }
   toggleFilter(event: any): void {
-    this.hideFilter = !this.hideFilter;
+    const x = !this.hideFilter;
+    handleToggle(event.target as HTMLInputElement, !x)
+    this.hideFilter = x;
   }
   mergeFilter(obj: S, arrs?: string[] | any, b?: S): S {
     const s = mergeFilter(obj, b, this.pageSizes, arrs);
@@ -844,14 +841,14 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       }, 0);
     }
   }
-  protected getModelName(): string {
+  getModelName(): string {
     return 'filter';
   }
-  protected setSearchForm(form: HTMLFormElement): void {
+  setSearchForm(form: HTMLFormElement): void {
     this.form = form;
   }
 
-  protected getSearchForm(): HTMLFormElement | undefined {
+  getSearchForm(): HTMLFormElement | undefined {
     return this.form;
   }
 
@@ -894,7 +891,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     return this.filter;
   }
 
-  protected getFields(): string[] | undefined {
+  getFields(): string[] | undefined {
     if (this.fields) {
       return this.fields;
     }
@@ -915,10 +912,10 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     this.tmpPageIndex = 1;
     this.doSearch();
   }
-  clearKeyworkOnClick = () => {
+  clearQ = () => {
     this.filter.q = '';
   }
-  searchOnClick(event: Event): void {
+  search(event: Event): void {
     if (event && !this.getSearchForm()) {
       const f = (event.currentTarget as HTMLInputElement).form;
       if (f) {
@@ -952,10 +949,10 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       if (!this.ignoreUrlParam) {
         addParametersIntoUrl(s, isFirstLoad);
       }
-      com.search(s);
+      com.callSearch(s);
     });
   }
-  search(ft: S) {
+  callSearch(ft: S) {
     const s = clone(ft);
     let page = this.pageIndex;
     if (!page || page < 1) {

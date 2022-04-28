@@ -105,7 +105,9 @@ export function diff(obj1: any, obj2: any): string[] {
   return fields;
 }
 
-export function makeDiff(obj1: any, obj2: any, keys?: string[], version?: string): any {
+export function makeDiff<T>(o1: T, o2: T, keys?: string[], version?: string): Partial<T> {
+  const obj1: any = o1;
+  const obj2: any = o2;
   const obj3: any = {};
   const s = diff(obj1, obj2);
   if (s.length === 0) {

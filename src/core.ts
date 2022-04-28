@@ -360,3 +360,15 @@ export function hideLoading(loading?: LoadingService | (() => void)): void {
     }
   }
 }
+
+export function handleToggle(target?: HTMLInputElement, on?: boolean): void {
+  if (target) {
+    if (on) {
+      if (!target.classList.contains('on')) {
+        target.classList.add('on');
+      }
+    } else {
+      target.classList.remove('on');
+    }
+  }
+}
