@@ -417,7 +417,7 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
             } else {
               if (Array.isArray(objValue)) {
                 if (objValue.length > 0) {
-                  const strs = [];
+                  const strs: string[] = [];
                   for (const subValue of objValue) {
                     if (typeof subValue === 'string') {
                       strs.push(subValue);
@@ -534,7 +534,7 @@ export function toggleSortStyle(target: HTMLElement): string {
   if (target.nodeName === 'I') {
     target = target.parentNode as HTMLElement;
   }
-  let i = null;
+  let i: Element | undefined;
   if (target.children.length === 0) {
     target.innerHTML = target.innerHTML + '<i class="sort-up"></i>';
   } else {

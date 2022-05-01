@@ -41,11 +41,11 @@ export class RootComponent {
     window.history.back();
   }
 
-  protected currencySymbol(): boolean | undefined {
+  currencySymbol(): boolean | undefined {
     return this.includeCurrencySymbol;
   }
 
-  protected getCurrencyCode(): string | undefined {
+  getCurrencyCode(): string | undefined {
     if (this.form) {
       const x = this.form.getAttribute('currency-code');
       if (x) {
@@ -534,7 +534,6 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   }
 
   onSave(isBack?: boolean) {
-    debugger
     const r = this.resourceService;
     if (this.newMode && this.addable !== true) {
       const msg = message(r.value, 'error_permission_add', 'error_permission');

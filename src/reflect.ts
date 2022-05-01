@@ -1,3 +1,28 @@
+export function trim(obj: any): void {
+  if (!obj || typeof obj !== 'object' || obj instanceof Date) {
+    return;
+  }
+  const keys = Object.keys(obj);
+  for (const key of keys) {
+    const v = obj[key];
+    if (v == null || v === '' || v === undefined) {
+      delete obj[key];
+    } else if (typeof v === 'object') {
+      if (!Array.isArray(v)) {
+        trim(v);
+      } else {
+        if (v.length === 0) {
+          delete obj[key];
+        } else {
+          for (const item of v) {
+            trim(item);
+          }
+        }
+      }
+    }
+  }
+  return obj;
+}
 export function clone(obj: any): any {
   if (!obj) {
     return obj;
@@ -9,7 +34,7 @@ export function clone(obj: any): any {
     return obj;
   }
   if (Array.isArray(obj)) {
-    const arr = [];
+    const arr: any[] = [];
     for (const sub of obj) {
       const c = clone(sub);
       arr.push(c);
@@ -75,7 +100,7 @@ const setKey = (_object: any, _isArrayKey: boolean, _key: string, _nextValue: an
 };
 
 export function diff(obj1: any, obj2: any): string[] {
-  const fields = [];
+  const fields: string[] = [];
   const key1s = Object.keys(obj1);
   for (const k of key1s) {
     const v1 = obj1[k];
@@ -130,7 +155,7 @@ export function makeDiff<T>(o1: T, o2: T, keys?: string[], version?: string): Pa
 }
 
 export function notIn(s1: string[], s2: string[]): string[] {
-  const r = [];
+  const r: string[] = [];
   for (const s of s2) {
     if (s1.indexOf(s) < 0) {
       r.push(s);
