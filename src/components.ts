@@ -1,8 +1,8 @@
 import { buildFromUrl, ActivatedRoute, buildId, initElement } from './angular';
 import { Attributes, createEditStatus, EditStatusConfig, error, Filter, getModelName, handleToggle, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService } from './core';
-import { createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig } from './core';
+import { createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig, ErrorMessage } from './core';
 import { formatDiffModel, showDiff } from './diff';
-import { build, createModel, EditParameter, GenericService, handleStatus, handleVersion, ResultInfo } from './edit';
+import { build, createModel, EditParameter, GenericService, handleStatus, handleVersion } from './edit';
 import { format, json } from './formatter';
 import { focusFirstError, readOnly } from './formutil';
 import { getAutoSearch, getConfirmFunc, getDiffStatusFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService } from './input';
@@ -304,7 +304,7 @@ export class MessageComponent extends BaseComponent {
 }
 
 export class BaseEditComponent<T, ID> extends BaseComponent {
-  constructor(protected service: GenericService<T, ID, number | ResultInfo<T>>, param: ResourceService | EditParameter,
+  constructor(protected service: GenericService<T, ID, number | number|T|ErrorMessage[]>, param: ResourceService | EditParameter,
     showMessage?: (msg: string, option?: string) => void,
     showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
     confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
@@ -600,98 +600,103 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       }
     }
     fn(m as any).then(result => {
-      com.postSave(result, isBackO);
+      com.postSave(result, obj, isBackO);
       com.running = false;
       hideLoading(com.loading);
-    }).catch(err => {
+    }).then(err => {
       error(err, com.resourceService.value, com.showError);
       com.running = false;
       hideLoading(com.loading);
     });
   }
-  protected succeed(msg: string, backOnSave: boolean, result?: ResultInfo<T>): void {
-    if (result) {
-      const model = result.value;
+  protected succeed(msg: string, origin: T, isBack?: boolean, model?: T): void {
+    if (model) {
       this.newMode = false;
       if (model && this.setBack) {
-        if (!this.backOnSuccess) {
-          this.resetState(false, model, clone(model));
-        }
+        this.resetState(false, model, clone(model));
       } else {
-        handleVersion(this.getRawModel(), this.version);
+        handleVersion(origin, this.version);
       }
     } else {
-      handleVersion(this.getRawModel(), this.version);
+      handleVersion(origin, this.version);
     }
-    this.successMessage(msg);
-    if (backOnSave) {
+    const isBackO = (isBack == null || isBack === undefined ? this.backOnSuccess : isBack);
+    this.showMessage(msg);
+    if (isBackO) {
       this.back();
     }
   }
   protected successMessage(msg: string) {
     this.showMessage(msg);
   }
-  protected fail(result: ResultInfo<T>): void {
-    const errors = result.errors;
+  protected fail(result: ErrorMessage[]): void {
     const f = this.form;
     const u = this.ui;
-    if (u) {
-      const unmappedErrors = u.showFormError(f, errors);
-      if (!result.message) {
-        if (errors && errors.length === 1) {
-          result.message = errors[0].message;
+    if (u && f) {
+      const unmappedErrors = u.showFormError(f, result);
+      focusFirstError(f);
+      if (unmappedErrors && unmappedErrors.length > 0) {
+        const t = this.resourceService.value('error');
+        if (u && u.buildErrorMessage) {
+          const msg = u.buildErrorMessage(unmappedErrors);
+          this.showError(msg, t);
         } else {
-          result.message = u.buildErrorMessage(unmappedErrors);
+          this.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, t);
         }
       }
-      focusFirstError(f);
-    } else if (errors && errors.length === 1) {
-      result.message = errors[0].message;
+    } else {
+      const t = this.resourceService.value('error');
+      if (result.length > 0) {
+        this.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, t);
+      } else {
+        this.showError(t, t);
+      }
     }
-    const t = this.resourceService.value('error');
-    this.showError(result.message ? result.message : 'Error', t);
   }
-  protected postSave(res: number | ResultInfo<T>, backOnSave: boolean): void {
+  protected postSave(res: number|string|T|ErrorMessage[], origin: T, isPatch: boolean, backOnSave?: boolean): void {
     this.running = false;
     hideLoading(this.loading);
     const st = this.status;
     const newMod = this.newMode;
     const successMsg = (newMod ? this.insertSuccessMsg : this.updateSuccessMsg);
     const x: any = res;
-    if (!isNaN(x)) {
+    const r = this.resourceService;
+    if (Array.isArray(x)) {
+      this.fail(x);
+    } else if (!isNaN(x)) {
       if (x === st.success) {
-        this.succeed(successMsg, backOnSave);
+        this.succeed(successMsg, origin, backOnSave);
       } else {
         if (newMod && x === st.duplicate_key) {
           this.handleDuplicateKey();
         } else if (!newMod && x === st.not_found) {
           this.handleNotFound();
         } else {
-          handleStatus(x as number, st, this.resourceService.value, this.showError);
+          handleStatus(x as number, st, r.value, this.showError);
         }
       }
     } else {
-      const result: ResultInfo<T> = x;
-      if (result.status === st.success) {
-        this.succeed(successMsg, backOnSave, result);
-      } else if (result.errors && result.errors.length > 0) {
-        this.fail(result);
-      } else if (newMod && result.status === st.duplicate_key) {
-        this.handleDuplicateKey(result);
-      } else if (!newMod && x === st.not_found) {
-        this.handleNotFound();
+      const result: T = x;
+      if (isPatch) {
+        const keys = Object.keys(result as any);
+        const a: any = origin;
+        for (const k of keys) {
+          a[k] = (result as any)[k];
+        }
+        this.succeed(successMsg, a, backOnSave);
       } else {
-        handleStatus(result.status, st, this.resourceService.value, this.showError);
+        this.succeed(successMsg, origin, backOnSave, result);
       }
+      this.showMessage(successMsg);
     }
   }
-  protected handleDuplicateKey(result?: ResultInfo<T>): void {
+  protected handleDuplicateKey(result?: T): void {
     const msg = message(this.resourceService.value, 'error_duplicate_key', 'error');
     this.showError(msg.message, msg.title);
   }
 }
 export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
-  constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute, service: GenericService<T, ID, number | ResultInfo<T>>, param: ResourceService | EditParameter,
+  constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute, service: GenericService<T, ID, number|T|ErrorMessage[]>, param: ResourceService | EditParameter,
     showMessage?: (msg: string, option?: string) => void,
     showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
     confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,

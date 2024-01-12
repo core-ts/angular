@@ -91,31 +91,59 @@ export function buildParameters<T>(url: string): T {
 }
 
 export class HttpRequest {
-  constructor(protected http: HttpClient, protected getOptions?: () => { headers?: Headers }) {
+  constructor(protected http: HttpClient, protected getHttpOptions?: () => Promise<{ headers?: Headers }>) {
+    this.getOptions = this.getOptions.bind(this);
     this.get = this.get.bind(this);
     this.delete = this.delete.bind(this);
     this.post = this.post.bind(this);
     this.put = this.put.bind(this);
     this.patch = this.patch.bind(this);
   }
+  protected getOptions(): Promise<{ headers?: Headers }> {
+    if (this.getHttpOptions) {
+      return this.getHttpOptions();
+    } else {
+      const httpOptions = {
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8'
+        }
+      }
+      return Promise.resolve(httpOptions);
+    }
+  }
   get<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
-    const x = (this.getOptions ? this.getOptions() : undefined);
-    return lastValueFrom(this.http.get<T>(url, opts ? opts : x));
+    if (opts) {
+      return lastValueFrom(this.http.get<T>(url, opts));
+    } else {
+      return this.getOptions().then(x => lastValueFrom(this.http.get<T>(url, x)));
+    }
   }
   delete<T>(url: string, opts?: { headers?: Headers; }): Promise<T> {
-    const x = (this.getOptions ? this.getOptions() : undefined);
-    return lastValueFrom(this.http.delete<T>(url, opts ? opts : x));
+    if (opts) {
+      return lastValueFrom(this.http.delete<T>(url, opts));
+    } else {
+      return this.getOptions().then(x => lastValueFrom(this.http.delete<T>(url, x)));
+    }
   }
   post<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
-    const x = (this.getOptions ? this.getOptions() : undefined);
-    return lastValueFrom(this.http.post<T>(url, obj, opts ? opts : x));
+    if (opts) {
+      return lastValueFrom(this.http.post<T>(url, obj, opts));
+    } else {
+      return this.getOptions().then(x => lastValueFrom(this.http.post<T>(url, obj, x)));
+    }
   }
   put<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
-    const x = (this.getOptions ? this.getOptions() : undefined);
-    return lastValueFrom(this.http.put<T>(url, obj, opts ? opts : x));
+    if (opts) {
+      return lastValueFrom(this.http.put<T>(url, obj, opts));
+    } else {
+      return this.getOptions().then(x => lastValueFrom(this.http.put<T>(url, obj, x)));
+    }
   }
   patch<T>(url: string, obj: any, opts?: { headers?: Headers; }): Promise<T> {
-    const x = (this.getOptions ? this.getOptions() : undefined);
-    return lastValueFrom(this.http.patch<T>(url, obj, opts ? opts : x));
+    if (opts) {
+      return lastValueFrom(this.http.patch<T>(url, obj, opts));
+    } else {
+      return this.getOptions().then(x => lastValueFrom(this.http.patch<T>(url, obj, x)));
+    }
   }
 }

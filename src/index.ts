@@ -3,7 +3,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 export interface DataMap<V> {
   [key: string]: V;
 }
-export function isAuthorized<T, V>(ur: T, router?: Router, to?: string, url?: string, m?: DataMap<V>, home?: string) {
+export function isAuthorized<T, V>(ur: T, router?: Router, to?: string, url?: string, m?: Map<string, V>, home?: string) {
   if (!ur) {
     if (to && to.length > 0 && router) {
       router.navigate([to]);
@@ -16,7 +16,7 @@ export function isAuthorized<T, V>(ur: T, router?: Router, to?: string, url?: st
       if (!url) {
         return true;
       }
-      const p = m[url];
+      const p = m.get(url);
       if (p) {
         return true;
       } else {
