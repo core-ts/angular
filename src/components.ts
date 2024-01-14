@@ -1,11 +1,11 @@
 import { buildFromUrl, ActivatedRoute, buildId, initElement } from './angular';
-import { Attributes, createEditStatus, EditStatusConfig, error, Filter, getModelName, handleToggle, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService } from './core';
-import { createDiffStatus, DiffApprService, DiffParameter, DiffStatusConfig, ErrorMessage } from './core';
+import { Attributes, error, Filter, getModelName, handleToggle, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService } from './core';
+import { DiffApprService, DiffParameter, ErrorMessage } from './core';
 import { formatDiffModel, showDiff } from './diff';
-import { build, createModel, EditParameter, GenericService, handleStatus, handleVersion } from './edit';
+import { build, createModel, EditParameter, GenericService, handleVersion } from './edit';
 import { format, json } from './formatter';
 import { focusFirstError, readOnly } from './formutil';
-import { getAutoSearch, getConfirmFunc, getDiffStatusFunc, getEditStatusFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService } from './input';
+import { getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService } from './input';
 import { clone, equalAll, makeDiff, setAll, setValue } from './reflect';
 import { addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, initFilter, mergeFilter, more, optimizeFilter, reset, showPaging } from './search';
 
@@ -311,17 +311,19 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     getLocale?: (profile?: string) => Locale,
     uis?: UIService,
     loading?: LoadingService,
-    status?: EditStatusConfig,
+    // status?: EditStatusConfig,
     patchable?: boolean, ignoreDate?: boolean, backOnSaveSuccess?: boolean) {
     super(getResource(param), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading));
     this.ui = getUIService(param, uis);
     this.showError = getErrorFunc(param, showError);
     this.showMessage = getMsgFunc(param, showMessage);
     this.confirm = getConfirmFunc(param, confirm);
+    /*
     this.status = getEditStatusFunc(param, status);
     if (!this.status) {
       this.status = createEditStatus(this.status);
     }
+    */
     if (service.metadata) {
       const metadata = service.metadata();
       if (metadata) {
@@ -375,7 +377,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.addable = true;
   }
   protected name?: string;
-  protected status: EditStatusConfig;
+  // protected status: EditStatusConfig;
   protected showMessage: (msg: string, option?: string) => void;
   protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void;
   protected confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
@@ -656,7 +658,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   protected postSave(res: number|string|T|ErrorMessage[], origin: T, isPatch: boolean, backOnSave?: boolean): void {
     this.running = false;
     hideLoading(this.loading);
-    const st = this.status;
+    // const st = this.status;
     const newMod = this.newMode;
     const successMsg = (newMod ? this.insertSuccessMsg : this.updateSuccessMsg);
     const x: any = res;
@@ -664,15 +666,15 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     if (Array.isArray(x)) {
       this.fail(x);
     } else if (!isNaN(x)) {
-      if (x === st.success) {
+      if (x > 0) {
         this.succeed(successMsg, origin, backOnSave);
       } else {
-        if (newMod && x === st.duplicate_key) {
+        if (newMod && x <= 0) {
           this.handleDuplicateKey();
-        } else if (!newMod && x === st.not_found) {
+        } else if (!newMod && x === 0) {
           this.handleNotFound();
         } else {
-          handleStatus(x as number, st, r.value, this.showError);
+          this.showError(r.value('error_version'), r.value('error'));
         }
       }
     } else {
@@ -702,8 +704,8 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
     confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
     getLocale?: (profile?: string) => Locale,
     uis?: UIService,
-    loading?: LoadingService, status?: EditStatusConfig, patchable?: boolean, ignoreDate?: boolean, backOnSaveSuccess?: boolean) {
-    super(service, param, showMessage, showError, confirm, getLocale, uis, loading, status, patchable, ignoreDate, backOnSaveSuccess);
+    loading?: LoadingService, patchable?: boolean, ignoreDate?: boolean, backOnSaveSuccess?: boolean) {
+    super(service, param, showMessage, showError, confirm, getLocale, uis, loading, patchable, ignoreDate, backOnSaveSuccess);
     this.onInit = this.onInit.bind(this);
   }
   onInit() {
@@ -1138,16 +1140,18 @@ export class BaseDiffApprComponent<T, ID> {
     param: ResourceService | DiffParameter,
     showMessage?: (msg: string, option?: string) => void,
     showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-    loading?: LoadingService, status?: DiffStatusConfig) {
+    loading?: LoadingService) {
     this.resourceService = getResource(param);
     this.resource = this.resourceService.resource();
     this.loading = getLoadingFunc(param, loading);
     this.showError = getErrorFunc(param, showError);
     this.showMessage = getMsgFunc(param, showMessage);
+    /*
     this.status = getDiffStatusFunc(param, status);
     if (!this.status) {
       this.status = createDiffStatus(this.status);
     }
+    */
     this.back = this.back.bind(this);
     const x: any = {};
     this.origin = x;
@@ -1160,7 +1164,7 @@ export class BaseDiffApprComponent<T, ID> {
     this.load = this.load.bind(this);
     this.handleNotFound = this.handleNotFound.bind(this);
   }
-  protected status: DiffStatusConfig;
+  // protected status: DiffStatusConfig;
   protected showMessage: (msg: string, option?: string) => void;
   protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void;
   protected resourceService: ResourceService;
@@ -1224,20 +1228,18 @@ export class BaseDiffApprComponent<T, ID> {
       return;
     }
     const com = this;
-    const st = this.status;
+    // const st = this.status;
     const r = this.resourceService.resource();
     if (this.id) {
       this.running = true;
       showLoading(this.loading);
       this.service.approve(this.id).then(status => {
-        if (status === st.success) {
+        if (status > 0) {
           com.showMessage(r['msg_approve_success']);
-        } else if (status === st.version_error) {
-          com.showMessage(r['msg_approve_version_error']);
-        } else if (status === st.not_found) {
+        } else if (status === 0) {
           com.handleNotFound(com.form);
         } else {
-          com.showError(r['error_internal'], r['error']);
+          com.showMessage(r['msg_approve_version_error']);
         }
         com.end();
       }).catch(err => {
@@ -1252,20 +1254,18 @@ export class BaseDiffApprComponent<T, ID> {
       return;
     }
     const com = this;
-    const st = this.status;
+    // const st = this.status;
     const r = this.resourceService.resource();
     if (this.id) {
       this.running = true;
       showLoading(this.loading);
       this.service.reject(this.id).then(status => {
-        if (status === st.success) {
+        if (status > 0) {
           com.showMessage(r['msg_reject_success']);
-        } else if (status === st.version_error) {
-          com.showMessage(r['msg_approve_version_error']);
-        } else if (status === st.not_found) {
+        } else if (status === 0) {
           com.handleNotFound(com.form);
         } else {
-          com.showError(r['error_internal'], r['error']);
+          com.showMessage(r['msg_approve_version_error']);
         }
         com.end();
       }).catch(err => {
@@ -1299,8 +1299,8 @@ export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
     param: ResourceService | DiffParameter,
     showMessage?: (msg: string, option?: string) => void,
     showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-    loading?: LoadingService, status?: DiffStatusConfig) {
-    super(service, param, showMessage, showError, loading, status);
+    loading?: LoadingService) {
+    super(service, param, showMessage, showError, loading);
     this.onInit = this.onInit.bind(this);
   }
   onInit() {

@@ -55,7 +55,7 @@ export interface ViewService<T, ID> {
   keys?(): string[];
   load(id: ID, ctx?: any): Promise<T | null>;
 }
-
+/*
 export interface EditStatusConfig {
   duplicate_key: number | string;
   not_found: number | string;
@@ -96,12 +96,13 @@ export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
   };
   return s;
 }
+*/
 export interface DiffParameter {
   resource: ResourceService;
   showMessage: (msg: string, option?: string) => void;
   showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
   loading?: LoadingService;
-  status?: DiffStatusConfig;
+  // status?: DiffStatusConfig;
 }
 export interface DiffModel<T, ID> {
   id?: ID;
