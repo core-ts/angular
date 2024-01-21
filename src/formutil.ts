@@ -1,4 +1,4 @@
-export function readOnly(form?: HTMLFormElement|null): void {
+export function setReadOnly(form?: HTMLFormElement|null, ...args: string[]): void {
   if (!form) {
     return;
   }
@@ -6,28 +6,39 @@ export function readOnly(form?: HTMLFormElement|null): void {
   for (let i = 0; i < len; i++) {
     const ctrl = form[i] as HTMLInputElement;
     const name = ctrl.getAttribute('name');
+    let skip = false;
     if (name != null && name.length > 0 && name !== 'btnBack') {
-      let nodeName = ctrl.nodeName;
-      const type = ctrl.getAttribute('type');
-      if (nodeName === 'INPUT' && type !== null) {
-        nodeName = type.toUpperCase();
-      }
-      if (nodeName !== 'BUTTON'
-        && nodeName !== 'RESET'
-        && nodeName !== 'SUBMIT'
-        && nodeName !== 'SELECT') {
-        switch (type) {
-          case 'checkbox':
-            ctrl.disabled = true;
-            break;
-          case 'radio':
-            ctrl.disabled = true;
-            break;
-          default:
-            ctrl.readOnly = true;
+      if (arguments.length > 1) {
+        for (let j = 1; j < arguments.length; j++) {
+          if (arguments[j] === name) {
+            skip = true;
+            // continue; has bugs => why?
+          }
         }
-      } else {
-        ctrl.disabled = true;
+      }
+      if (skip === false) {
+        let nodeName = ctrl.nodeName;
+        const type = ctrl.getAttribute('type');
+        if (nodeName === 'INPUT' && type !== null) {
+          nodeName = type.toUpperCase();
+        }
+        if (nodeName !== 'BUTTON'
+          && nodeName !== 'RESET'
+          && nodeName !== 'SUBMIT'
+          && nodeName !== 'SELECT') {
+          switch (type) {
+            case 'checkbox':
+              ctrl.disabled = true;
+              break;
+            case 'radio':
+              ctrl.disabled = true;
+              break;
+            default:
+              ctrl.readOnly = true;
+          }
+        } else {
+          ctrl.disabled = true;
+        }
       }
     }
   }

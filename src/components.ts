@@ -4,7 +4,7 @@ import { DiffApprService, DiffParameter, ErrorMessage } from './core';
 import { formatDiffModel, showDiff } from './diff';
 import { build, createModel, EditParameter, GenericService, handleVersion } from './edit';
 import { format, json } from './formatter';
-import { focusFirstError, readOnly } from './formutil';
+import { focusFirstError, setReadOnly } from './formutil';
 import { getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService } from './input';
 import { clone, equalAll, makeDiff, setAll, setValue } from './reflect';
 import { addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, initFilter, mergeFilter, more, optimizeFilter, reset, showPaging } from './search';
@@ -129,7 +129,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
   }
   protected handleNotFound(form?: HTMLFormElement): void {
     if (form) {
-      readOnly(form);
+      setReadOnly(form);
     }
     const msg = message(this.resourceService.value, 'error_not_found', 'error');
     this.showError(msg.message, msg.title);
@@ -374,7 +374,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.successMessage = this.successMessage.bind(this);
     this.postSave = this.postSave.bind(this);
     this.handleDuplicateKey = this.handleDuplicateKey.bind(this);
-    this.addable = true;
+    // this.addable = true;
   }
   protected name?: string;
   // protected status: EditStatusConfig;
@@ -393,9 +393,9 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   backOnSuccess = true;
   protected orginalModel?: T;
 
-  addable?: boolean;
-  readOnly?: boolean;
-  deletable?: boolean;
+  // addable?: boolean;
+  // readOnly?: boolean;
+  // deletable?: boolean;
 
   insertSuccessMsg: string;
   updateSuccessMsg: string;
@@ -450,7 +450,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   protected handleNotFound(form?: HTMLFormElement): void {
     const msg = message(this.resourceService.value, 'error_not_found', 'error');
     if (this.form) {
-      readOnly(form);
+      setReadOnly(form);
     }
     this.showError(msg.message, msg.title);
   }
@@ -537,41 +537,31 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
 
   onSave(isBack?: boolean) {
     const r = this.resourceService;
-    if (this.newMode && this.addable !== true) {
-      const msg = message(r.value, 'error_permission_add', 'error_permission');
-      this.showError(msg.message, msg.title);
+    if (this.running) {
       return;
-    } else if (!this.newMode && this.readOnly) {
-      const msg = message(r.value, 'error_permission_edit', 'error_permission');
-      this.showError(msg.message, msg.title);
-      return;
-    } else {
-      if (this.running) {
-        return;
-      }
-      const com = this;
-      const obj = com.getModel();
-      if (!this.newMode) {
-        const diffObj = makeDiff(this.orginalModel, obj, this.keys, this.version);
-        const l = Object.keys(diffObj as any).length;
-        if (l === 0) {
-          this.showMessage(r.value('msg_no_change'));
-        } else {
-          com.validate(obj, () => {
-            const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
-            this.confirm(msg.message, msg.title, () => {
-              com.doSave(obj, diffObj, isBack);
-            }, msg.no, msg.yes);
-          });
-        }
+    }
+    const com = this;
+    const obj = com.getModel();
+    if (!this.newMode) {
+      const diffObj = makeDiff(this.orginalModel, obj, this.keys, this.version);
+      const l = Object.keys(diffObj as any).length;
+      if (l === 0) {
+        this.showMessage(r.value('msg_no_change'));
       } else {
         com.validate(obj, () => {
           const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
           this.confirm(msg.message, msg.title, () => {
-            com.doSave(obj, obj, isBack);
+            com.doSave(obj, diffObj, isBack);
           }, msg.no, msg.yes);
         });
       }
+    } else {
+      com.validate(obj, () => {
+        const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
+        this.confirm(msg.message, msg.title, () => {
+          com.doSave(obj, obj, isBack);
+        }, msg.no, msg.yes);
+      });
     }
   }
   validate(obj: T, callback: (u?: T) => void): void {
@@ -813,11 +803,11 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   pageSizes: number[] = [10, 20, 40, 60, 100, 200, 400, 1000];
 
   chkAll?: HTMLInputElement;
-  viewable = true;
-  addable = true;
-  editable = true;
-  approvable?: boolean;
-  deletable?: boolean;
+  // viewable = true;
+  // addable = true;
+  // editable = true;
+  // approvable?: boolean;
+  // deletable?: boolean;
 
   deleteHeader: string;
   deleteConfirm: string;
