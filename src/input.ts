@@ -49,9 +49,9 @@ export function getMsgFunc(p: ResourceService|ShowMessageInput, showMsg?: (msg: 
   return (p as any).showMessage;
 }
 interface ConfirmInput {
-  confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
+  confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
 }
-export function getConfirmFunc(p: ResourceService|ConfirmInput, cf?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void): (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void {
+export function getConfirmFunc(p: ResourceService|ConfirmInput, cf?: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void): (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void {
   if (cf) {
     return cf;
   }
@@ -67,9 +67,9 @@ export function getLocaleFunc(p: ResourceService|GetLocaleInput, getLoc?: () => 
   return (p as any).getLocale;
 }
 interface ShowErrorInput {
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  showError: (m: string, callback?: () => void, header?: string) => void;
 }
-export function getErrorFunc(p: ResourceService|ShowErrorInput, showErr?: (m: string, header?: string, detail?: string, callback?: () => void) => void): (m: string, header?: string, detail?: string, callback?: () => void) => void {
+export function getErrorFunc(p: ResourceService|ShowErrorInput, showErr?: (m: string, callback?: () => void, header?: string) => void): (m: string, callback?: () => void, header?: string) => void {
   if (showErr) {
     return showErr;
   }

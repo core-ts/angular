@@ -58,7 +58,7 @@ export class RootComponent {
 export class BaseViewComponent<T, ID> extends RootComponent {
   constructor(sv: ((id: ID, ctx?: any) => Promise<T>) | ViewService<T, ID>,
     param: ResourceService | ViewParameter,
-    showError?: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
+    showError?: (m: string, callback?: () => void, header?: string) => void,
     getLocale?: (profile?: string) => Locale,
     loading?: LoadingService, ignoreDate?: boolean) {
     super(getResource(param), getLocaleFunc(param, getLocale));
@@ -89,7 +89,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
   }
   protected name?: string;
   protected loading?: LoadingService;
-  protected showError: (msg: string, title?: string, detail?: string, callback?: () => void) => void;
+  protected showError: (m: string, callback?: () => void, header?: string) => void;
   protected loadData?: (id: ID, ctx?: any) => Promise<T | null | undefined>;
   // protected service?: ViewService<T, ID>;
   protected keys?: string[];
@@ -132,7 +132,7 @@ export class BaseViewComponent<T, ID> extends RootComponent {
       setReadOnly(form);
     }
     const msg = message(this.resourceService.value, 'error_not_found', 'error');
-    this.showError(msg.message, msg.title);
+    this.showError(msg.message);
   }
   protected getModelName(): string {
     if (this.name && this.name.length > 0) {
@@ -159,7 +159,7 @@ export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> {
   constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute,
     sv: ((id: ID, ctx?: any) => Promise<T>) | ViewService<T, ID>,
     param: ResourceService | ViewParameter,
-    showError?: (msg: string, title?: string, detail?: string, callback?: () => void) => void,
+    showError?: (m: string, callback?: () => void, header?: string) => void,
     getLocale?: (profile?: string) => Locale,
     loading?: LoadingService) {
     super(sv, param, showError, getLocale, loading);
@@ -306,8 +306,8 @@ export class MessageComponent extends BaseComponent {
 export class BaseEditComponent<T, ID> extends BaseComponent {
   constructor(protected service: GenericService<T, ID, number | number|T|ErrorMessage[]>, param: ResourceService | EditParameter,
     showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-    confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
+    showError?: (m: string, callback?: () => void, header?: string) => void,
+    confirm?: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
     getLocale?: (profile?: string) => Locale,
     uis?: UIService,
     loading?: LoadingService,
@@ -379,8 +379,8 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   protected name?: string;
   // protected status: EditStatusConfig;
   protected showMessage: (msg: string, option?: string) => void;
-  protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void;
-  protected confirm: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
+  protected showError: (m: string, callback?: () => void, header?: string) => void;
+  protected confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void;
   protected ui?: UIService;
   protected metadata?: Attributes;
   protected metamodel?: MetaModel;
@@ -452,7 +452,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     if (this.form) {
       setReadOnly(form);
     }
-    this.showError(msg.message, msg.title);
+    this.showError(msg.message);
   }
   protected formatModel(obj: T): void {
     if (this.metamodel) {
@@ -550,17 +550,17 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       } else {
         com.validate(obj, () => {
           const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
-          this.confirm(msg.message, msg.title, () => {
+          this.confirm(msg.message, () => {
             com.doSave(obj, diffObj, isBack);
-          }, msg.no, msg.yes);
+          }, msg.title, msg.no, msg.yes);
         });
       }
     } else {
       com.validate(obj, () => {
         const msg = message(r.value, 'msg_confirm_save', 'confirm', 'yes', 'no');
-        this.confirm(msg.message, msg.title, () => {
+        this.confirm(msg.message, () => {
           com.doSave(obj, obj, isBack);
-        }, msg.no, msg.yes);
+        }, msg.title, msg.no, msg.yes);
       });
     }
   }
@@ -584,7 +584,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     const isBackO = (isBack == null || isBack === undefined ? this.backOnSuccess : isBack);
     const com = this;
     let m: T | Partial<T> = obj;
-    let fn = this.newMode ? this.service.insert : this.service.update;
+    let fn = this.newMode ? this.service.create : this.service.update;
     if (!this.newMode) {
       if (this.patchable === true && this.service.patch && body && Object.keys(body).length > 0) {
         m = body;
@@ -628,20 +628,19 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       const unmappedErrors = u.showFormError(f, result);
       focusFirstError(f);
       if (unmappedErrors && unmappedErrors.length > 0) {
-        const t = this.resourceService.value('error');
         if (u && u.buildErrorMessage) {
           const msg = u.buildErrorMessage(unmappedErrors);
-          this.showError(msg, t);
+          this.showError(msg);
         } else {
-          this.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message, t);
+          this.showError(unmappedErrors[0].field + ' ' + unmappedErrors[0].code + ' ' + unmappedErrors[0].message);
         }
       }
     } else {
       const t = this.resourceService.value('error');
       if (result.length > 0) {
-        this.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message, t);
+        this.showError(result[0].field + ' ' + result[0].code + ' ' + result[0].message);
       } else {
-        this.showError(t, t);
+        this.showError(t);
       }
     }
   }
@@ -664,7 +663,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         } else if (!newMod && x === 0) {
           this.handleNotFound();
         } else {
-          this.showError(r.value('error_version'), r.value('error'));
+          this.showError(r.value('error_version'));
         }
       }
     } else {
@@ -684,14 +683,14 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   }
   protected handleDuplicateKey(result?: T): void {
     const msg = message(this.resourceService.value, 'error_duplicate_key', 'error');
-    this.showError(msg.message, msg.title);
+    this.showError(msg.message);
   }
 }
 export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
   constructor(protected viewContainerRef: ViewContainerRef, protected route: ActivatedRoute, service: GenericService<T, ID, number|T|ErrorMessage[]>, param: ResourceService | EditParameter,
     showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
-    confirm?: (m2: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
+    showError?: (m: string, callback?: () => void, header?: string) => void,
+    confirm?: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
     getLocale?: (profile?: string) => Locale,
     uis?: UIService,
     loading?: LoadingService, patchable?: boolean, ignoreDate?: boolean, backOnSaveSuccess?: boolean) {
@@ -709,7 +708,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   constructor(sv: ((s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
     param: ResourceService | SearchParameter,
     showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, header?: string, detail?: string, callback?: () => void) => void,
+    showError?: (m: string, callback?: () => void, header?: string) => void,
     getLocale?: (profile?: string) => Locale,
     uis?: UIService,
     loading?: LoadingService) {
@@ -762,7 +761,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     this.pageChanged = this.pageChanged.bind(this);
   }
   protected showMessage: (msg: string, option?: string) => void;
-  protected showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  protected showError: (m: string, callback?: () => void, header?: string) => void;
   protected ui?: UIService;
   protected searchFn?: (s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>;
   // protected service: SearchService<T, S>;
@@ -1108,7 +1107,7 @@ export class SearchComponent<T, S extends Filter> extends BaseSearchComponent<T,
     sv: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
     param: ResourceService | SearchParameter,
     showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, header?: string, detail?: string, callback?: () => void) => void,
+    showError?: (m: string, callback?: () => void, header?: string) => void,
     getLocale?: (profile?: string) => Locale,
     uis?: UIService,
     loading?: LoadingService) {
@@ -1129,7 +1128,7 @@ export class BaseDiffApprComponent<T, ID> {
   constructor(protected service: DiffApprService<T, ID>,
     param: ResourceService | DiffParameter,
     showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+    showError?: (m: string, callback?: () => void, header?: string) => void,
     loading?: LoadingService) {
     this.resourceService = getResource(param);
     this.resource = this.resourceService.resource();
@@ -1156,7 +1155,7 @@ export class BaseDiffApprComponent<T, ID> {
   }
   // protected status: DiffStatusConfig;
   protected showMessage: (msg: string, option?: string) => void;
-  protected showError: (m: string, title?: string, detail?: string, callback?: () => void) => void;
+  protected showError: (m: string, callback?: () => void, header?: string) => void;
   protected resourceService: ResourceService;
   protected loading?: LoadingService;
   resource: StringMap;
@@ -1206,7 +1205,7 @@ export class BaseDiffApprComponent<T, ID> {
   protected handleNotFound(form?: HTMLFormElement) {
     this.disabled = true;
     const r = this.resourceService.resource();
-    this.showError(r['error_not_found'], r['error']);
+    this.showError(r['error_not_found']);
   }
 
   formatFields(value: T): T {
@@ -1224,7 +1223,7 @@ export class BaseDiffApprComponent<T, ID> {
       this.running = true;
       showLoading(this.loading);
       this.service.approve(this.id).then(status => {
-        if (status > 0) {
+        if (typeof status === 'number' && status > 0) {
           com.showMessage(r['msg_approve_success']);
         } else if (status === 0) {
           com.handleNotFound(com.form);
@@ -1250,7 +1249,7 @@ export class BaseDiffApprComponent<T, ID> {
       this.running = true;
       showLoading(this.loading);
       this.service.reject(this.id).then(status => {
-        if (status > 0) {
+        if (typeof status === 'number' && status > 0) {
           com.showMessage(r['msg_reject_success']);
         } else if (status === 0) {
           com.handleNotFound(com.form);
@@ -1288,7 +1287,7 @@ export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
     service: DiffApprService<T, ID>,
     param: ResourceService | DiffParameter,
     showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, title?: string, detail?: string, callback?: () => void) => void,
+    showError?: (m: string, callback?: () => void, header?: string) => void,
     loading?: LoadingService) {
     super(service, param, showMessage, showError, loading);
     this.onInit = this.onInit.bind(this);
@@ -1300,4 +1299,14 @@ export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
       this.load(id);
     }
   }
+}
+export function isSuccessful<T>(x: number|T|ErrorMessage[]): boolean {
+  if (Array.isArray(x)) {
+    return false;
+  } else if (typeof x === 'object') {
+    return true;
+  } else if (typeof x === 'number' && x > 0) {
+    return true;
+  }
+  return false;
 }

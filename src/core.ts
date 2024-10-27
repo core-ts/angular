@@ -38,7 +38,7 @@ export interface SearchService<T, S extends Filter> {
 export interface SearchParameter {
   resource: ResourceService;
   showMessage: (msg: string, option?: string) => void;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  showError: (m: string, callback?: () => void, h?: string) => void;
   ui?: UIService;
   getLocale?: (profile?: string) => Locale;
   loading?: LoadingService;
@@ -46,7 +46,7 @@ export interface SearchParameter {
 }
 export interface ViewParameter {
   resource: ResourceService;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  showError: (m: string, callback?: () => void, header?: string) => void;
   getLocale?: (profile?: string) => Locale;
   loading?: LoadingService;
 }
@@ -100,7 +100,7 @@ export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
 export interface DiffParameter {
   resource: ResourceService;
   showMessage: (msg: string, option?: string) => void;
-  showError: (m: string, header?: string, detail?: string, callback?: () => void) => void;
+  showError: (m: string, callback?: () => void, header?: string) => void;
   loading?: LoadingService;
   // status?: DiffStatusConfig;
 }
@@ -284,11 +284,11 @@ export interface MetaModel {
   arrayFields?: MetaModel[];
   version?: string;
 }
-export function error(err: any, gv: StringMap | ((key: string) => string), ae: (msg: string, header?: string, detail?: string, callback?: () => void) => void) {
+export function error(err: any, gv: StringMap | ((key: string) => string), ae: (msg: string, callback?: () => void, header?: string) => void) {
   const title = getString('error', gv);
   let msg = getString('error_internal', gv);
   if (!err) {
-    ae(msg, title);
+    ae(msg, undefined, title);
     return;
   }
   const data = err && err.response ? err.response : err;
@@ -297,9 +297,9 @@ export function error(err: any, gv: StringMap | ((key: string) => string), ae: (
     if (status && !isNaN(status)) {
       msg = messageByHttpStatus(status, gv);
     }
-    ae(msg, title);
+    ae(msg, undefined, title);
   } else {
-    ae(msg, title);
+    ae(msg, undefined, title);
   }
 }
 export function getModelName(form?: HTMLFormElement): string {
