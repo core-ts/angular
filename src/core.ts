@@ -121,7 +121,7 @@ export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<
 }
 
 export interface Currency {
-  currencyCode?: string;
+  currencyCode: string;
   decimalDigits: number;
   currencySymbol: string;
 }
