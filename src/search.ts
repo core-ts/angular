@@ -1,4 +1,4 @@
-import {resources} from './core';
+import {resources, StringMap} from './core';
 
 interface Filter {
   page?: number;
@@ -168,7 +168,7 @@ export function changePage(com: Pagination, pageIndex: number, pageSize: number)
   com.pageSize = pageSize;
   com.append = false;
 }
-export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
+export function buildFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
   obj.fields = fields;
   if (searchable.pageIndex && searchable.pageIndex > 1) {
     obj.page = searchable.pageIndex;
@@ -187,6 +187,27 @@ export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable,
     delete obj.sort;
   }
   return obj;
+}
+export function optimizeFilter<S extends Filter>(obj: S, sortable: Sortable): S {
+  if (sortable.sortField && sortable.sortField.length > 0) {
+    obj.sort = (sortable.sortType === '-' ? '-' + sortable.sortField : sortable.sortField);
+  } else {
+    delete obj.sort;
+  }
+  delete obj.page;
+  delete obj.limit;
+  delete obj.fields;
+  return obj
+}
+export function getOffset(limit: number, page?: number, firstLimit?: number): number {
+  const p = (page && page > 0 ? page : 1)
+  if (firstLimit && firstLimit > 0) {
+    const offset = limit * (p - 2) + firstLimit;
+    return offset < 0 ? 0 : offset;
+  } else {
+    const offset = limit * (p - 1);
+    return offset < 0 ? 0 : offset;
+  }
 }
 
 export function append<T>(list?: T[], results?: T[]): T[] {
@@ -251,7 +272,7 @@ export function getFields(form?: HTMLFormElement): string[]|undefined {
     }
   }
   if (!nodes.querySelector) {
-    return [];
+    return undefined;
   }
   const table = nodes.querySelector('table');
   const fields: string[] = [];
@@ -271,7 +292,7 @@ export function getFields(form?: HTMLFormElement): string[]|undefined {
       }
     }
   }
-  return fields;
+  return fields.length > 0 ? fields : undefined;
 }
 interface Component<T> {
   pageIndex?: number;
@@ -346,9 +367,28 @@ export function getPageTotal(pageSize?: number, total?: number): number {
   }
 }
 
-export function buildMessage<T>(r: ResourceService, pageIndex: number|undefined, pageSize: number, results: T[], total?: number): string {
+export function formatText(...args: any[]): string {
+  let formatted = args[0]
+  if (!formatted || formatted === "") {
+    return ""
+  }
+  if (args.length > 1 && Array.isArray(args[1])) {
+    const params = args[1]
+    for (let i = 0; i < params.length; i++) {
+      const regexp = new RegExp("\\{" + i + "\\}", "gi")
+      formatted = formatted.replace(regexp, params[i])
+    }
+  } else {
+    for (let i = 1; i < args.length; i++) {
+      const regexp = new RegExp("\\{" + (i - 1) + "\\}", "gi")
+      formatted = formatted.replace(regexp, args[i])
+    }
+  }
+  return formatted
+}
+export function buildMessage<T>(resource: StringMap, pageIndex: number|undefined, pageSize: number, results: T[], total?: number): string {
   if (!results || results.length === 0) {
-    return r.value('msg_no_data_found');
+    return resource.msg_no_data_found;
   } else {
     if (!pageIndex) {
       pageIndex = 1;
@@ -357,10 +397,10 @@ export function buildMessage<T>(r: ResourceService, pageIndex: number|undefined,
     const toIndex = fromIndex + results.length - 1;
     const pageTotal = getPageTotal(pageSize, total);
     if (pageTotal > 1) {
-      const msg2 = r.format(r.value('msg_search_result_page_sequence'), fromIndex, toIndex, total, pageIndex, pageTotal);
+      const msg2 = formatText(resource.msg_search_result_page_sequence, fromIndex, toIndex, total, pageIndex, pageTotal);
       return msg2;
     } else {
-      const msg3 = r.format(r.value('msg_search_result_sequence'), fromIndex, toIndex);
+      const msg3 = formatText(resource.msg_search_result_sequence, fromIndex, toIndex);
       return msg3;
     }
   }
@@ -472,9 +512,25 @@ export interface Sort {
   type?: string;
 }
 
+export function handleToggle(target?: HTMLInputElement, on?: boolean): boolean {
+  const off = !on
+  if (target) {
+    if (on) {
+      if (!target.classList.contains('on')) {
+        target.classList.add('on');
+      }
+    } else {
+      target.classList.remove('on');
+    }
+  }
+  return off
+}
 export function handleSortEvent(event: Event, com: Sortable): void {
   if (event && event.target) {
-    const target = event.target as HTMLElement;
+    let target = event.target as HTMLElement;
+    if (target.nodeName === "I") {
+      target = target.parentElement as HTMLElement
+    }
     const s = handleSort(target, com.sortTarget, com.sortField, com.sortType);
     com.sortField = s.field;
     com.sortType = s.type;

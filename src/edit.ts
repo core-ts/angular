@@ -1,4 +1,4 @@
-import { Attributes, LoadingService, Locale, MetaModel, resources, ResourceService, UIService, ViewService } from './core';
+import { Attributes, LoadingService, Locale, MetaModel, resources, ResourceService, StringMap, UIService, ViewService } from './core';
 import { build as build2 } from './metadata';
 
 interface ErrorMessage {
@@ -111,5 +111,28 @@ export function handleVersion<T>(obj: T, version?: string): void {
     } else {
       (obj as any)[version] = 1;
     }
+  }
+}
+export function isSuccessful<T>(x: number|T|ErrorMessage[]): boolean {
+  if (Array.isArray(x)) {
+    return false;
+  } else if (typeof x === 'object') {
+    return true;
+  } else if (typeof x === 'number' && x > 0) {
+    return true;
+  }
+  return false;
+}
+
+type Result<T> = number | T | ErrorMessage[];
+export function afterSaved<T>(res: Result<T>, form: HTMLFormElement|undefined, resource: StringMap, showFormError: (form?: HTMLFormElement, errors?: ErrorMessage[]) => ErrorMessage[], alertSuccess: (msg: string, callback?: () => void) => void, alertError :(msg: string) => void) {
+  if (Array.isArray(res)) {
+    showFormError(form, res)
+  } else if (isSuccessful(res)) {
+    alertSuccess(resource.msg_save_success, () => window.history.back())
+  } else if (res === 0) {
+    alertError(resource.error_not_found)
+  } else {
+    alertError(resource.error_conflict)
   }
 }

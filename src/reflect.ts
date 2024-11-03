@@ -153,6 +153,28 @@ export function makeDiff<T>(o1: T, o2: T, keys?: string[], version?: string): Pa
   }
   return obj3;
 }
+export function hasDiff<T>(o1: T, o2: T, keys?: string[], version?: string): boolean {
+  const diff = makeDiff(o1, o2, keys, version)
+  return !isEmptyObject(diff)
+}
+export function isEmptyObject(obj: any): boolean {
+  for (let key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      return false;
+    }
+  }
+  return true;
+}
+interface StringMap {
+  [key: string]: string;
+}
+export function back<T>(confirm: (msg: string, yesCallback?: () => void) => void, resource: StringMap, o1: T, o2: T, keys?: string[], version?: string) {
+  if (!hasDiff(o1, o2, keys, version)) {
+    window.history.back()
+  } else {
+    confirm(resource.msg_confirm_back, () => window.history.back())
+  }
+}
 
 export function notIn(s1: string[], s2: string[]): string[] {
   const r: string[] = [];

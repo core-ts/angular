@@ -1,5 +1,5 @@
 import { buildFromUrl, ActivatedRoute, buildId, initElement } from './angular';
-import { Attributes, error, Filter, getModelName, handleToggle, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService } from './core';
+import { Attributes, error, Filter, getModelName, hideLoading, LoadingService, Locale, message, MetaModel, ResourceService, SearchParameter, SearchResult, SearchService, showLoading, StringMap, UIService, ViewContainerRef, ViewParameter, ViewService } from './core';
 import { DiffApprService, DiffParameter, ErrorMessage } from './core';
 import { formatDiffModel, showDiff } from './diff';
 import { build, createModel, EditParameter, GenericService, handleVersion } from './edit';
@@ -7,7 +7,7 @@ import { format, json } from './formatter';
 import { focusFirstError, setReadOnly } from './formutil';
 import { getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService } from './input';
 import { clone, equalAll, makeDiff, setAll, setValue } from './reflect';
-import { addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, initFilter, mergeFilter, more, optimizeFilter, reset, showPaging } from './search';
+import { addParametersIntoUrl, append, buildFilter, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, handleToggle, initFilter, mergeFilter, more, reset, showPaging } from './search';
 
 export const enLocale = {
   'id': 'en-US',
@@ -678,7 +678,6 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
       } else {
         this.succeed(successMsg, origin, backOnSave, result);
       }
-      this.showMessage(successMsg);
     }
   }
   protected handleDuplicateKey(result?: T): void {
@@ -865,7 +864,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       const obj2 = this.ui.decodeFromForm(sf, locale, this.getCurrencyCode());
       obj = obj2 ? obj2 : {};
     }
-    const obj3 = optimizeFilter(obj, this, this.getFields());
+    const obj3 = buildFilter(obj, this, this.getFields());
     if (this.excluding) {
       obj3.excluding = this.excluding;
     }
@@ -1035,7 +1034,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       com.setList(results);
       com.tmpPageIndex = s.page;
       if (s.limit) {
-        this.showMessage(buildMessage(this.resourceService, s.page, s.limit, sr.list, sr.total));
+        this.showMessage(buildMessage(this.resourceService.resource(), s.page, s.limit, sr.list, sr.total));
       }
     }
     this.running = false;
@@ -1299,14 +1298,4 @@ export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
       this.load(id);
     }
   }
-}
-export function isSuccessful<T>(x: number|T|ErrorMessage[]): boolean {
-  if (Array.isArray(x)) {
-    return false;
-  } else if (typeof x === 'object') {
-    return true;
-  } else if (typeof x === 'number' && x > 0) {
-    return true;
-  }
-  return false;
 }
