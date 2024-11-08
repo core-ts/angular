@@ -53,6 +53,10 @@ export function navigate(router: Router, stateTo: any, params?: any): void {
   }
 }
 
+export function getNumber(event: Event) {
+  const ele = event.currentTarget as HTMLInputElement | HTMLSelectElement;
+  return Number(ele.value);
+}
 export * from './angular';
 export * from './formutil';
 export * from './core';
