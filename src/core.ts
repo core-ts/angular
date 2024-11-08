@@ -311,7 +311,7 @@ export function getModelName(form?: HTMLFormElement): string {
     const b = form.name;
     if (b) {
       if (b.endsWith('Form')) {
-        return b.substr(0, b.length - 4);
+        return b.substring(0, b.length - 4);
       }
       return b;
     }

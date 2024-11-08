@@ -411,14 +411,21 @@ function removeFormatUrl(url: string): string {
   return startParams !== -1 ? url.substring(0, startParams) : url;
 }
 
-
-export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: boolean, fields?: string, limit?: string): void {
+function getPrefix(url: string): string {
+  return url.indexOf("?") >= 0 ? "&" : "?"
+}
+export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: boolean, page?: number, fields?: string, limit?: string): void {
   if (!isFirstLoad) {
     if (!fields || fields.length === 0) {
       fields = 'fields';
     }
     if (!limit || limit.length === 0) {
       limit = 'limit';
+    }
+    if (page && page > 1) {
+      if (!ft.page || ft.page <= 1) {
+        ft.page = page;
+      }
     }
     const pageIndex = ft.page;
     if (pageIndex && !isNaN(pageIndex) && pageIndex <= 1) {
@@ -434,26 +441,14 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
           if (typeof objValue === 'string' || typeof objValue === 'number') {
             if (key === limit) {
               if (objValue !== resources.limit) {
-                if (url.indexOf('?') === -1) {
-                  url += `?${key}=${objValue}`;
-                } else {
-                  url += `&${key}=${objValue}`;
-                }
+                url += getPrefix(url) + `${key}=${objValue}`;
               }
             } else {
-              if (url.indexOf('?') === -1) {
-                url += `?${key}=${objValue}`;
-              } else {
-                url += `&${key}=${objValue}`;
-              }
+              url += getPrefix(url) + `${key}=${objValue}`;
             }
           } else if (typeof objValue === 'object') {
             if (objValue instanceof Date) {
-              if (url.indexOf('?') === -1) {
-                url += `?${key}=${objValue.toISOString()}`;
-              } else {
-                url += `&${key}=${objValue.toISOString()}`;
-              }
+              url += getPrefix(url) + `${key}=${objValue.toISOString()}`;
             } else {
               if (Array.isArray(objValue)) {
                 if (objValue.length > 0) {
@@ -465,28 +460,16 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
                       strs.push(subValue.toString());
                     }
                   }
-                  if (url.indexOf('?') === -1) {
-                    url += `?${key}=${strs.join(',')}`;
-                  } else {
-                    url += `&${key}=${strs.join(',')}`;
-                  }
+                  url += getPrefix(url) + `${key}=${strs.join(',')}`;
                 }
               } else {
                 const keysLvl2 = Object.keys(objValue);
                 for (const key2 of keysLvl2) {
                   const objValueLvl2 = objValue[key2];
-                  if (url.indexOf('?') === -1) {
-                    if (objValueLvl2 instanceof Date) {
-                      url += `?${key}.${key2}=${objValueLvl2.toISOString()}`;
-                    } else {
-                      url += `?${key}.${key2}=${objValueLvl2}`;
-                    }
+                  if (objValueLvl2 instanceof Date) {
+                    url += getPrefix(url) + `${key}.${key2}=${objValueLvl2.toISOString()}`;
                   } else {
-                    if (objValueLvl2 instanceof Date) {
-                      url += `&${key}.${key2}=${objValueLvl2.toISOString()}`;
-                    } else {
-                      url += `&${key}.${key2}=${objValueLvl2}`;
-                    }
+                    url += getPrefix(url) + `${key}.${key2}=${objValueLvl2}`;
                   }
                 }
               }
@@ -498,7 +481,7 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
     let p = 'http://';
     const loc = window.location.href;
     if (loc.length >= 8) {
-      const ss = loc.substr(0, 8);
+      const ss = loc.substring(0, 8);
       if (ss === 'https://') {
         p = 'https://';
       }

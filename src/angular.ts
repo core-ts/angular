@@ -80,7 +80,7 @@ export function buildParameters<T>(url: string): T {
   let urlSearch = url;
   const i = urlSearch.indexOf('?');
   if (i >= 0) {
-    urlSearch = url.substr(i + 1);
+    urlSearch = url.substring(i + 1);
   }
   const obj: any = {};
   const httpParams = new HttpParams({ fromString: urlSearch });
