@@ -32,6 +32,7 @@ export interface Sortable {
 }
 
 export interface Pagination {
+  itemTotal: number;
   initPageSize?: number;
   pageSize?: number;
   pageIndex?: number;
@@ -188,7 +189,7 @@ export function buildFilter<S extends Filter>(obj: S, searchable: Searchable, fi
   }
   return obj;
 }
-export function optimizeFilter<S extends Filter>(obj: S, sortable: Sortable): S {
+export function buildSort<S extends Filter>(obj: S, sortable: Sortable): S {
   if (sortable.sortField && sortable.sortField.length > 0) {
     obj.sort = (sortable.sortType === '-' ? '-' + sortable.sortField : sortable.sortField);
   } else {
@@ -257,9 +258,15 @@ export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, tot
   const pageTotal = getPageTotal(pageSize, total);
   com.pages = pageTotal;
   com.showPaging = (!total || com.pages <= 1 || (list && list.length >= total) ? false : true);
+  if (total && total >= 0) {
+    com.itemTotal = total;
+  }
 }
 
-export function getFields(form?: HTMLFormElement): string[]|undefined {
+export function getFields(form?: HTMLFormElement, arr?: string[]): string[]|undefined {
+  if (arr && arr.length > 0) {
+    return arr
+  }
   if (!form) {
     return undefined;
   }

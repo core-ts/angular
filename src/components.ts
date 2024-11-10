@@ -1014,9 +1014,6 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     }
     const appendMode = com.appendMode;
     com.pageIndex = (s.page && s.page >= 1 ? s.page : 1);
-    if (sr.total) {
-      com.itemTotal = sr.total;
-    }
     if (appendMode) {
       let limit = s.limit;
       if ((!s.page || s.page <= 1) && s.firstLimit && s.firstLimit > 0) {
