@@ -952,7 +952,8 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     if (!page || page < 1) {
       page = 1;
     }
-    let offset: number | undefined;
+    // let offset: number | undefined;
+    /*
     if (ft.limit) {
       if (ft.firstLimit && ft.firstLimit > 0) {
         offset = ft.limit * (page - 2) + ft.firstLimit;
@@ -960,8 +961,9 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
         offset = ft.limit * (page - 1);
       }
     }
+      */
     const limit = (page <= 1 && ft.firstLimit && ft.firstLimit > 0 ? ft.firstLimit : ft.limit);
-    const next = (this.nextPageToken && this.nextPageToken.length > 0 ? this.nextPageToken : offset);
+    const next = (this.nextPageToken && this.nextPageToken.length > 0 ? this.nextPageToken : page);
     const fields = ft.fields;
     delete ft['page'];
     delete ft['fields'];
