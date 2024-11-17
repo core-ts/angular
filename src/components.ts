@@ -7,7 +7,7 @@ import { format, json } from './formatter';
 import { focusFirstError, setReadOnly } from './formutil';
 import { getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService } from './input';
 import { clone, equalAll, makeDiff, setAll, setValue } from './reflect';
-import { addParametersIntoUrl, append, buildFilter, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, handleToggle, initFilter, mergeFilter, more, reset, showPaging } from './search';
+import { addParametersIntoUrl, append, buildMessage, changePage, changePageSize, formatResults, getFields, handleAppend, handleSortEvent, handleToggle, initFilter, mergeFilter, more, optimizeFilter, reset, showPaging } from './search';
 
 export const enLocale = {
   'id': 'en-US',
@@ -864,7 +864,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       const obj2 = this.ui.decodeFromForm(sf, locale, this.getCurrencyCode());
       obj = obj2 ? obj2 : {};
     }
-    const obj3 = buildFilter(obj, this, this.getFields());
+    const obj3 = optimizeFilter(obj, this, this.getFields());
     if (this.excluding) {
       obj3.excluding = this.excluding;
     }

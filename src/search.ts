@@ -1,4 +1,5 @@
 import {resources, StringMap} from './core';
+import { clone } from './reflect';
 
 interface Filter {
   page?: number;
@@ -169,7 +170,7 @@ export function changePage(com: Pagination, pageIndex: number, pageSize: number)
   com.pageSize = pageSize;
   com.append = false;
 }
-export function buildFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
+export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
   obj.fields = fields;
   if (searchable.pageIndex && searchable.pageIndex > 1) {
     obj.page = searchable.pageIndex;
@@ -188,17 +189,6 @@ export function buildFilter<S extends Filter>(obj: S, searchable: Searchable, fi
     delete obj.sort;
   }
   return obj;
-}
-export function buildSort<S extends Filter>(obj: S, sortable: Sortable): S {
-  if (sortable.sortField && sortable.sortField.length > 0) {
-    obj.sort = (sortable.sortType === '-' ? '-' + sortable.sortField : sortable.sortField);
-  } else {
-    delete obj.sort;
-  }
-  delete obj.page;
-  delete obj.limit;
-  delete obj.fields;
-  return obj
 }
 export function getOffset(limit: number, page?: number, firstLimit?: number): number {
   const p = (page && page > 0 ? page : 1)
@@ -500,6 +490,35 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
 export interface Sort {
   field?: string;
   type?: string;
+}
+export function buildSort(sort?: string | null): Sort {
+  const sortObj: Sort = {}
+  if (sort && sort.length > 0) {
+    const ch = sort.charAt(0)
+    if (ch === "+" || ch === "-") {
+      sortObj.field = sort.substring(1)
+      sortObj.type = ch
+    } else {
+      sortObj.field = sort
+      sortObj.type = ""
+    }
+  }
+  return sortObj
+}
+export function setSort(sortable: Sortable, sort: string | undefined | null) {
+  const st = buildSort(sort);
+  sortable.sortField = st.field;
+  sortable.sortType = st.type;
+}
+export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S {
+  const filter: any = clone(obj)
+  if (sortable.sortField && sortable.sortField.length > 0) {
+    filter.sort = sortable.sortType === "-" ? "-" + sortable.sortField : sortable.sortField
+  } else {
+    delete filter.sort
+  }
+  delete filter.fields
+  return filter
 }
 
 export function handleToggle(target?: HTMLInputElement, on?: boolean): boolean {
