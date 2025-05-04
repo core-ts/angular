@@ -66,10 +66,12 @@ export function focusFirstElement(form: HTMLFormElement): void {
         && nodeName !== 'CHECKBOX'
         && nodeName !== 'RADIO') {
         ctrl.focus();
+        /*
         try {
           ctrl.setSelectionRange(0, ctrl.value.length);
         } catch (err) {
         }
+        */
         return;
       }
     }

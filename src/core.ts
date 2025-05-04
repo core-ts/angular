@@ -130,8 +130,11 @@ export interface Headers {
 }
 // tslint:disable-next-line:class-name
 export class resources {
-  static limit = 24;
-  static pages = [12, 24, 60, 100, 120, 180, 300, 600];
+  static fields = "fields";
+  static page = "page";
+  static defaultLimit = 24;
+  static limit = "limit";
+  static limits = [12, 24, 60, 100, 120, 180, 300, 600];
   static _cache: any = {};
   static cache = true;
   static ignoreDate?: boolean;

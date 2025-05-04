@@ -33,10 +33,10 @@ export interface Sortable {
 }
 
 export interface Pagination {
-  itemTotal: number;
+  totalItems: number;
   initPageSize?: number;
-  pageSize?: number;
-  pageIndex?: number;
+  limit?: number;
+  page?: number;
   total?: number;
   pages?: number;
   showPaging?: boolean;
@@ -48,7 +48,7 @@ export interface Pagination {
 interface Searchable extends Pagination, Sortable {
 }
 
-export function mergeFilter<S extends Filter>(obj: S, b?: S, pageSizes?: number[], arrs?: string[]|any) {
+export function mergeFilter<S extends Filter>(obj: S, b?: S, limits?: number[], arrs?: string[]|any) {
   let a: any = b;
   if (!b) {
     a = {};
@@ -56,8 +56,8 @@ export function mergeFilter<S extends Filter>(obj: S, b?: S, pageSizes?: number[
   const slimit: any = obj['limit'];
   if (!isNaN(slimit)) {
     const limit = parseInt(slimit, 10);
-    if (pageSizes && pageSizes.length > 0) {
-      if (pageSizes.indexOf(limit) >= 0) {
+    if (limits && limits.length > 0) {
+      if (limits.indexOf(limit) >= 0) {
         a.limit = limit;
       }
     } else {
@@ -102,18 +102,18 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
     const page = parseInt(m.page as any, 10);
     m.page = page;
     if (page >= 1) {
-      com.pageIndex = page;
+      com.page = page;
     }
   }
   if (!isNaN(m.limit as any)) {
     const pageSize = parseInt(m.limit as any, 10);
     m.limit = pageSize;
     if (pageSize > 0) {
-      com.pageSize = pageSize;
+      com.limit = pageSize;
     }
   }
-  if (!m.limit && com.pageSize) {
-    m.limit = com.pageSize;
+  if (!m.limit && com.limit) {
+    m.limit = com.limit;
   }
   if (!isNaN(m.firstLimit as any)) {
     const initPageSize = parseInt(m.firstLimit as any, 10);
@@ -121,10 +121,10 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
       m.firstLimit = initPageSize;
       com.initPageSize = initPageSize;
     } else {
-      com.initPageSize = com.pageSize;
+      com.initPageSize = com.limit;
     }
   } else {
-    com.initPageSize = com.pageSize;
+    com.initPageSize = com.limit;
   }
   const st = m.sort;
   if (st && st.length > 0) {
@@ -146,10 +146,10 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
 }
 export function more(com: Pagination): void {
   com.append = true;
-  if (!com.pageIndex) {
-    com.pageIndex = 1;
+  if (!com.page) {
+    com.page = 1;
   } else {
-    com.pageIndex = com.pageIndex + 1;
+    com.page = com.page + 1;
   }
 }
 
@@ -158,27 +158,27 @@ export function reset(com: Searchable): void {
   com.sortTarget = undefined;
   com.sortField = undefined;
   com.append = false;
-  com.pageIndex = 1;
+  com.page = 1;
 }
 export function changePageSize(com: Pagination, size: number): void {
   com.initPageSize = size;
-  com.pageSize = size;
-  com.pageIndex = 1;
+  com.limit = size;
+  com.page = 1;
 }
 export function changePage(com: Pagination, pageIndex: number, pageSize: number): void {
-  com.pageIndex = pageIndex;
-  com.pageSize = pageSize;
+  com.page = pageIndex;
+  com.limit = pageSize;
   com.append = false;
 }
 export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
   obj.fields = fields;
-  if (searchable.pageIndex && searchable.pageIndex > 1) {
-    obj.page = searchable.pageIndex;
+  if (searchable.page && searchable.page > 1) {
+    obj.page = searchable.page;
   } else {
     delete obj.page;
   }
-  obj.limit = searchable.pageSize;
-  if (searchable.appendMode && searchable.initPageSize !== searchable.pageSize) {
+  obj.limit = searchable.limit;
+  if (searchable.appendMode && searchable.initPageSize !== searchable.limit) {
     obj.firstLimit = searchable.initPageSize;
   } else {
     delete obj.firstLimit;
@@ -216,7 +216,7 @@ export function append<T>(list?: T[], results?: T[]): T[] {
 export function showResults<T>(com: Pagination, s: Filter, list: T[], total?: number, nextPageToken?: string): void {
   com.pageIndex = (s.page && s.page >= 1 ? s.page : 1);
   if (total) {
-    com.itemTotal = total;
+    com.totalItems = total;
   }
   if (com.appendMode) {
     let limit = s.limit;
@@ -249,7 +249,7 @@ export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, tot
   com.pages = pageTotal;
   com.showPaging = (!total || com.pages <= 1 || (list && list.length >= total) ? false : true);
   if (total && total >= 0) {
-    com.itemTotal = total;
+    com.totalItems = total;
   }
 }
 
@@ -414,19 +414,17 @@ function getPrefix(url: string): string {
 export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: boolean, page?: number, fields?: string, limit?: string): void {
   if (!isFirstLoad) {
     if (!fields || fields.length === 0) {
-      fields = 'fields';
+      fields = resources.fields;
     }
     if (!limit || limit.length === 0) {
-      limit = 'limit';
+      limit = resources.limit;
     }
-    if (page && page > 1) {
-      if (!ft.page || ft.page <= 1) {
-        ft.page = page;
-      }
+    if (page) {
+      (ft as any)[resources.page] = page;
     }
-    const pageIndex = ft.page;
+    const pageIndex = (ft as any)[resources.page];
     if (pageIndex && !isNaN(pageIndex) && pageIndex <= 1) {
-      delete ft.page;
+      delete (ft as any)[resources.page];
     }
     const keys = Object.keys(ft);
     const currentUrl = window.location.host + window.location.pathname;
@@ -437,11 +435,15 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
         if (key !== fields) {
           if (typeof objValue === 'string' || typeof objValue === 'number') {
             if (key === limit) {
-              if (objValue !== resources.limit) {
+              if (objValue !== resources.defaultLimit) {
                 url += getPrefix(url) + `${key}=${objValue}`;
               }
             } else {
-              url += getPrefix(url) + `${key}=${objValue}`;
+              if (typeof objValue === 'string') {
+                url += getPrefix(url) + `${key}=${encodeURIComponent(objValue)}`;
+              } else {
+                url += getPrefix(url) + `${key}=${objValue}`;
+              }
             }
           } else if (typeof objValue === 'object') {
             if (objValue instanceof Date) {
@@ -452,7 +454,7 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
                   const strs: string[] = [];
                   for (const subValue of objValue) {
                     if (typeof subValue === 'string') {
-                      strs.push(subValue);
+                      strs.push(encodeURIComponent(subValue));
                     } else if (typeof subValue === 'number') {
                       strs.push(subValue.toString());
                     }
@@ -466,7 +468,11 @@ export function addParametersIntoUrl<S extends Filter>(ft: S, isFirstLoad?: bool
                   if (objValueLvl2 instanceof Date) {
                     url += getPrefix(url) + `${key}.${key2}=${objValueLvl2.toISOString()}`;
                   } else {
-                    url += getPrefix(url) + `${key}.${key2}=${objValueLvl2}`;
+                    if (typeof objValueLvl2 === 'string') {
+                      url += getPrefix(url) + `${key}.${key2}=${encodeURIComponent(objValueLvl2)}`;
+                     } else  {
+                      url += getPrefix(url) + `${key}.${key2}=${objValueLvl2}`;
+                     }
                   }
                 }
               }

@@ -768,10 +768,10 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   view?: string;
   nextPageToken?: string;
   initPageSize = 20;
-  pageSize = 20;
-  pageIndex = 1;
-  itemTotal: number = 0;
-  pageTotal?: number;
+  limit = 20;
+  page = 1;
+  totalItems: number = 0;
+  // pageTotal?: number;
   showPaging?: boolean;
   append?: boolean;
   appendMode?: boolean;
@@ -787,7 +787,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   initFields?: boolean;
   sequenceNo = 'sequenceNo';
   triggerSearch?: boolean;
-  tmpPageIndex?: number;
+  tmpPage?: number;
   loadTime?: Date;
   loadPage = 1;
 
@@ -798,7 +798,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   ignoreUrlParam?: boolean;
 
   pageMaxSize = 7;
-  pageSizes: number[] = [10, 20, 40, 60, 100, 200, 400, 1000];
+  limits: number[] = [10, 20, 40, 60, 100, 200, 400, 1000];
 
   chkAll?: HTMLInputElement;
   // viewable = true;
@@ -820,13 +820,13 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     this.hideFilter = x;
   }
   mergeFilter(obj: S, arrs?: string[] | any, b?: S): S {
-    const s = mergeFilter(obj, b, this.pageSizes, arrs);
+    const s = mergeFilter(obj, b, this.limits, arrs);
     return s;
   }
   load(s: S, autoSearch: boolean): void {
     this.loadTime = new Date();
     const obj2 = initFilter(s, this);
-    this.loadPage = this.pageIndex;
+    this.loadPage = this.page;
     this.setFilter(obj2);
     const com = this;
     if (autoSearch) {
@@ -903,7 +903,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   }
   pageSizeChanged(size: number, event?: Event): void {
     changePageSize(this, size);
-    this.tmpPageIndex = 1;
+    this.tmpPage = 1;
     this.doSearch();
   }
   clearQ = () => {
@@ -924,7 +924,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       return;
     }
     reset(this);
-    this.tmpPageIndex = 1;
+    this.tmpPage = 1;
     this.doSearch();
   }
   doSearch(isFirstLoad?: boolean) {
@@ -948,7 +948,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   }
   callSearch(ft: S) {
     const s = clone(ft);
-    let page = this.pageIndex;
+    let page = this.page;
     if (!page || page < 1) {
       page = 1;
     }
@@ -999,8 +999,8 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     }
   }
   searchError(response: any): void {
-    if (this.tmpPageIndex) {
-      this.pageIndex = this.tmpPageIndex;
+    if (this.tmpPage) {
+      this.page = this.tmpPage;
     }
     error(response, this.resourceService.value, this.showError);
   }
@@ -1012,10 +1012,10 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       if (this.getLocale) {
         locale = this.getLocale();
       }
-      formatResults(results, this.pageIndex, this.pageSize, this.initPageSize, this.sequenceNo, this.format, locale);
+      formatResults(results, this.page, this.limit, this.initPageSize, this.sequenceNo, this.format, locale);
     }
     const appendMode = com.appendMode;
-    com.pageIndex = (s.page && s.page >= 1 ? s.page : 1);
+    com.page = (s.page && s.page >= 1 ? s.page : 1);
     if (appendMode) {
       let limit = s.limit;
       if ((!s.page || s.page <= 1) && s.firstLimit && s.firstLimit > 0) {
@@ -1031,7 +1031,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     } else {
       showPaging(com, sr.list, s.limit, sr.total);
       com.setList(results);
-      com.tmpPageIndex = s.page;
+      com.tmpPage = s.page;
       if (s.limit) {
         this.showMessage(buildMessage(this.resourceService.resource(), s.page, s.limit, sr.list, sr.total));
       }
@@ -1078,7 +1078,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   }
 
   showMore(event?: Event): void {
-    this.tmpPageIndex = this.pageIndex;
+    this.tmpPage = this.page;
     more(this);
     this.doSearch();
   }
