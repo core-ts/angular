@@ -204,10 +204,10 @@ export function message(gv: StringMap | ((key: string) => string), msg: string, 
   return m;
 }
 export function messageByHttpStatus(status: number, gv: StringMap | ((key: string) => string)): string {
-  const k = 'status_' + status;
+  const k = 'error_' + status;
   let msg = getString(k, gv);
   if (!msg || msg.length === 0) {
-    msg = getString('error_internal', gv);
+    msg = getString('error_500', gv);
   }
   return msg;
 }
