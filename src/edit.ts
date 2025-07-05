@@ -1,48 +1,4 @@
-import { Attributes, LoadingService, Locale, MetaModel, resources, ResourceService, StringMap, UIService, ViewService } from "./core"
-import { build as build2 } from "./metadata"
-
-interface ErrorMessage {
-  field: string
-  code: string
-  param?: string | number | Date
-  message?: string
-}
-// export type Status = 0 | 1 | 2 | 4 | 8;
-export interface ResultInfo<T> {
-  status: string | number
-  errors?: ErrorMessage[]
-  value?: T
-  message?: string
-}
-export interface EditParameter {
-  resource: ResourceService
-  showMessage: (msg: string, option?: string) => void
-  showError: (m: string, callback?: () => void, header?: string) => void
-  confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
-  ui?: UIService
-  getLocale?: (profile?: string) => Locale
-  loading?: LoadingService
-  // status?: EditStatusConfig;
-}
-export interface GenericService<T, ID, R> extends ViewService<T, ID> {
-  patch?(obj: Partial<T>, ctx?: any): Promise<R>
-  create(obj: T, ctx?: any): Promise<R>
-  update(obj: T, ctx?: any): Promise<R>
-  delete?(id: ID, ctx?: any): Promise<number>
-}
-
-export function build(attributes: Attributes, ignoreDate?: boolean, name?: string): MetaModel {
-  if (resources.cache && name && name.length > 0) {
-    let meta: MetaModel = resources._cache[name]
-    if (!meta) {
-      meta = build2(attributes, ignoreDate)
-      resources._cache[name] = meta
-    }
-    return meta
-  } else {
-    return build2(attributes, ignoreDate)
-  }
-}
+import { Attributes, ErrorMessage, StringMap } from "./core"
 
 export function createModel<T>(attributes?: Attributes): T {
   const obj: any = {}
@@ -103,16 +59,6 @@ export function handleStatus(x: number|string, st: EditStatusConfig, gv: (k: str
   }
 }
 */
-export function handleVersion<T>(obj: T, version?: string): void {
-  if (obj && version && version.length > 0) {
-    const v = (obj as any)[version]
-    if (v && typeof v === "number") {
-      ;(obj as any)[version] = v + 1
-    } else {
-      ;(obj as any)[version] = 1
-    }
-  }
-}
 export function isSuccessful<T>(x: number | T | ErrorMessage[]): boolean {
   if (Array.isArray(x)) {
     return false

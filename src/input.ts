@@ -1,4 +1,4 @@
-import { LoadingService, Locale, ResourceService, UIService } from "./core"
+import { Locale, ResourceService, UIService } from "./core"
 
 interface ResourceInput {
   resource: ResourceService
@@ -29,6 +29,11 @@ export function getUIService(p: ResourceService | UIInput, ui0?: UIService): UIS
     return ui0
   }
   return (p as any).ui
+}
+
+export interface LoadingService {
+  showLoading(firstTime?: boolean): void
+  hideLoading(): void
 }
 interface LoadingInput {
   loading?: LoadingService

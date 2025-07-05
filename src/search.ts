@@ -1,29 +1,23 @@
 import { resources, StringMap } from "./core"
 import { clone } from "./reflect"
 
-interface Filter {
+export interface Filter {
+  q?: string
   page?: number
   limit?: number
   firstLimit?: number
   fields?: string[]
   sort?: string
 }
-interface Locale {
-  id?: string
-  countryCode: string
-  dateFormat: string
-  firstDayOfWeek: number
-  decimalSeparator: string
-  groupSeparator: string
-  decimalDigits: number
-  currencyCode: string
-  currencySymbol: string
-  currencyPattern: number
-  currencySample?: string
+export interface SearchResult<T> {
+  total?: number
+  list: T[]
+  nextPageToken?: string
+  last?: boolean
 }
-interface ResourceService {
-  value(key: string, param?: any): string
-  format(f: string, ...args: any[]): string
+export interface SearchService<T, S extends Filter> {
+  keys?(): string[]
+  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>>
 }
 
 export interface Sortable {
@@ -45,7 +39,7 @@ export interface Pagination {
   appendable?: boolean
 }
 
-interface Searchable extends Pagination, Sortable {}
+export interface Searchable extends Pagination, Sortable {}
 
 export function mergeFilter<S extends Filter>(obj: S, b?: S, limits?: number[], arrs?: string[] | any) {
   let a: any = b
@@ -143,14 +137,6 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
   */
   return m
 }
-export function more(com: Pagination): void {
-  com.append = true
-  if (!com.page) {
-    com.page = 1
-  } else {
-    com.page = com.page + 1
-  }
-}
 
 export function reset(com: Searchable): void {
   removeSortStatus(com.sortTarget)
@@ -169,26 +155,6 @@ export function changePage(com: Pagination, pageIndex: number, pageSize: number)
   com.limit = pageSize
   com.append = false
 }
-export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
-  obj.fields = fields
-  if (searchable.page && searchable.page > 1) {
-    obj.page = searchable.page
-  } else {
-    delete obj.page
-  }
-  obj.limit = searchable.limit
-  if (searchable.appendMode && searchable.initPageSize !== searchable.limit) {
-    obj.firstLimit = searchable.initPageSize
-  } else {
-    delete obj.firstLimit
-  }
-  if (searchable.sortField && searchable.sortField.length > 0) {
-    obj.sort = searchable.sortType === "-" ? "-" + searchable.sortField : searchable.sortField
-  } else {
-    delete obj.sort
-  }
-  return obj
-}
 export function getOffset(limit: number, page?: number, firstLimit?: number): number {
   const p = page && page > 0 ? page : 1
   if (firstLimit && firstLimit > 0) {
@@ -200,17 +166,6 @@ export function getOffset(limit: number, page?: number, firstLimit?: number): nu
   }
 }
 
-export function append<T>(list?: T[], results?: T[]): T[] {
-  if (list && results) {
-    for (const obj of results) {
-      list.push(obj)
-    }
-  }
-  if (!list) {
-    return []
-  }
-  return list
-}
 /*
 export function showResults<T>(com: Pagination, s: Filter, list: T[], total?: number, nextPageToken?: string): void {
   com.pageIndex = (s.page && s.page >= 1 ? s.page : 1);
@@ -228,20 +183,7 @@ export function showResults<T>(com: Pagination, s: Filter, list: T[], total?: nu
   }
 }
 */
-export function handleAppend<T>(com: Pagination, list: T[], limit?: number, nextPageToken?: string): void {
-  if (!limit || limit === 0) {
-    com.appendable = false
-  } else {
-    if (!nextPageToken || nextPageToken.length === 0 || list.length < limit) {
-      com.appendable = false
-    } else {
-      com.appendable = true
-    }
-  }
-  if (!list || list.length === 0) {
-    com.appendable = false
-  }
-}
+
 export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, total?: number): void {
   com.total = total
   const pageTotal = getPageTotal(pageSize, total)
@@ -289,72 +231,6 @@ export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | un
     }
   }
   return fields.length > 0 ? fields : undefined
-}
-interface Component<T> {
-  pageIndex?: number
-  pageSize?: number
-  initPageSize?: number
-  sequenceNo?: string
-  format?: (oj: T, lc?: Locale) => T
-}
-export function formatResultsByComponent<T>(results: T[], c: Component<T>, lc: Locale) {
-  formatResults(results, c.pageIndex, c.pageSize, c.pageSize, c.sequenceNo, c.format, lc)
-}
-export function formatResults<T>(
-  results: T[],
-  pageIndex?: number,
-  pageSize?: number,
-  initPageSize?: number,
-  sequenceNo?: string,
-  ft?: (oj: T, lc?: Locale) => T,
-  lc?: Locale,
-): void {
-  if (results && results.length > 0) {
-    let hasSequencePro = false
-    if (ft) {
-      if (sequenceNo && sequenceNo.length > 0) {
-        for (const obj of results) {
-          if ((obj as any)[sequenceNo]) {
-            hasSequencePro = true
-          }
-          ft(obj, lc)
-        }
-      } else {
-        for (const obj of results) {
-          ft(obj, lc)
-        }
-      }
-    } else if (sequenceNo && sequenceNo.length > 0) {
-      for (const obj of results) {
-        if ((obj as any)[sequenceNo]) {
-          hasSequencePro = true
-        }
-      }
-    }
-    if (sequenceNo && sequenceNo.length > 0 && !hasSequencePro) {
-      if (!pageIndex) {
-        pageIndex = 1
-      }
-      if (pageSize) {
-        if (!initPageSize) {
-          initPageSize = pageSize
-        }
-        if (pageIndex <= 1) {
-          for (let i = 0; i < results.length; i++) {
-            ;(results[i] as any)[sequenceNo] = i - pageSize + pageSize * pageIndex + 1
-          }
-        } else {
-          for (let i = 0; i < results.length; i++) {
-            ;(results[i] as any)[sequenceNo] = i - pageSize + pageSize * pageIndex + 1 - (pageSize - initPageSize)
-          }
-        }
-      } else {
-        for (let i = 0; i < results.length; i++) {
-          ;(results[i] as any)[sequenceNo] = i + 1
-        }
-      }
-    }
-  }
 }
 
 export function getPageTotal(pageSize?: number, total?: number): number {
@@ -517,11 +393,6 @@ export function buildSort(sort?: string | null): Sort {
     }
   }
   return sortObj
-}
-export function setSort(sortable: Sortable, sort: string | undefined | null) {
-  const st = buildSort(sort)
-  sortable.sortField = st.field
-  sortable.sortType = st.type
 }
 export function buildSortFilter<S extends Filter>(obj: S, sortable: Sortable): S {
   const filter: any = clone(obj)

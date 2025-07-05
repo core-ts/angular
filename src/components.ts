@@ -1,52 +1,85 @@
-import { ActivatedRoute, buildFromUrl, buildId, initElement } from "./angular"
+import { buildFromUrl, initElement } from "./angular"
 import {
   Attributes,
-  DiffApprService,
-  DiffParameter,
-  error,
   ErrorMessage,
-  Filter,
-  getModelName,
-  hideLoading,
-  LoadingService,
   Locale,
-  message,
   MetaModel,
+  resources,
   ResourceService,
-  SearchParameter,
-  SearchResult,
-  SearchService,
-  showLoading,
   StringMap,
   UIService,
   ViewContainerRef,
-  ViewParameter,
-  ViewService,
 } from "./core"
-import { formatDiffModel, showDiff } from "./diff"
-import { build, createModel, EditParameter, GenericService, handleVersion } from "./edit"
+import { DiffModel, formatDiffModel, showDiff } from "./diff"
+import { createModel } from "./edit"
+import { error, message } from "./error"
 import { format, json } from "./formatter"
 import { focusFirstError, setReadOnly } from "./formutil"
-import { getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService } from "./input"
+import { getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService, LoadingService } from "./input"
+import { build as build2 } from "./metadata"
 import { clone, equalAll, makeDiff, setAll, setValue } from "./reflect"
 import {
   addParametersIntoUrl,
-  append,
   buildMessage,
   changePage,
   changePageSize,
-  formatResults,
+  Filter,
   getFields,
-  handleAppend,
   handleSortEvent,
   handleToggle,
   initFilter,
   mergeFilter,
-  more,
-  optimizeFilter,
+  Pagination,
   reset,
+  Searchable,
+  SearchResult,
+  SearchService,
   showPaging,
 } from "./search"
+
+export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
+  try {
+    const element = e.target as HTMLInputElement
+    const form = element.form
+    if (form) {
+      const container = form.childNodes[1] as HTMLElement
+      const elementRect = element.getBoundingClientRect()
+      const absoluteElementTop = elementRect.top + window.pageYOffset
+      const middle = absoluteElementTop - window.innerHeight / 2
+      const scrollTop = container.scrollTop
+      const timeOut = isUseTimeOut ? 300 : 0
+      const isChrome = navigator.userAgent.search("Chrome") > 0
+      setTimeout(() => {
+        if (isChrome) {
+          const scrollPosition = scrollTop === 0 ? elementRect.top + 64 : scrollTop + middle
+          container.scrollTo(0, Math.abs(scrollPosition))
+        } else {
+          container.scrollTo(0, Math.abs(scrollTop + middle))
+        }
+      }, timeOut)
+    }
+  } catch (e) {
+    console.log(e)
+  }
+}
+export function showLoading(loading?: LoadingService | ((firstTime?: boolean) => void)): void {
+  if (loading) {
+    if (typeof loading === "function") {
+      loading()
+    } else {
+      loading.showLoading()
+    }
+  }
+}
+export function hideLoading(loading?: LoadingService | (() => void)): void {
+  if (loading) {
+    if (typeof loading === "function") {
+      loading()
+    } else {
+      loading.hideLoading()
+    }
+  }
+}
 
 export const enLocale = {
   id: "en-US",
@@ -93,6 +126,52 @@ export class RootComponent {
     }
     return undefined
   }
+}
+
+export interface ViewParameter {
+  resource: ResourceService
+  showError: (m: string, callback?: () => void, header?: string) => void
+  getLocale?: (profile?: string) => Locale
+  loading?: LoadingService
+}
+export interface ViewService<T, ID> {
+  metadata?(): Attributes | undefined
+  keys?(): string[]
+  load(id: ID, ctx?: any): Promise<T | null>
+}
+
+export function getModelName(form?: HTMLFormElement): string {
+  if (form) {
+    const a = form.getAttribute("model-name")
+    if (a && a.length > 0) {
+      return a
+    }
+    const b = form.name
+    if (b) {
+      if (b.endsWith("Form")) {
+        return b.substring(0, b.length - 4)
+      }
+      return b
+    }
+  }
+  return ""
+}
+export function build(attributes: Attributes, ignoreDate?: boolean, name?: string): MetaModel {
+  if (resources.cache && name && name.length > 0) {
+    let meta: MetaModel = resources._cache[name]
+    if (!meta) {
+      meta = build2(attributes, ignoreDate)
+      resources._cache[name] = meta
+    }
+    return meta
+  } else {
+    return build2(attributes, ignoreDate)
+  }
+}
+
+export interface ActivatedRoute {
+  /** An observable of the matrix parameters scoped to this route. */
+  params: any
 }
 export class BaseViewComponent<T, ID> extends RootComponent {
   constructor(
@@ -198,6 +277,43 @@ export class BaseViewComponent<T, ID> extends RootComponent {
     const model = (this as any)[name]
     return model
   }
+}
+
+export function getId<ID>(route: ActivatedRoute, keys?: string[], id?: ID): ID | null {
+  if (id) {
+    return id
+  } else {
+    return buildId(route, keys)
+  }
+}
+export function buildId<ID>(route: ActivatedRoute, keys?: string[]): ID | null {
+  if (!route) {
+    return null
+  }
+  const param: any = route.params
+  const obj = param._value
+  if (!keys || keys.length === 0) {
+    return obj["id"]
+  }
+  if (!(keys && keys.length > 0)) {
+    return null
+  }
+  if (keys.length === 1) {
+    const x = obj[keys[0]]
+    if (x && x !== "") {
+      return x
+    }
+    return obj["id"]
+  }
+  const id: any = {}
+  for (const key of keys) {
+    const v = obj[key]
+    if (!v) {
+      return null
+    }
+    id[key] = v
+  }
+  return id
 }
 export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> {
   constructor(
@@ -343,6 +459,35 @@ export class MessageComponent extends BaseComponent {
   }
 }
 
+export interface EditParameter {
+  resource: ResourceService
+  showMessage: (msg: string, option?: string) => void
+  showError: (m: string, callback?: () => void, header?: string) => void
+  confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
+  ui?: UIService
+  getLocale?: (profile?: string) => Locale
+  loading?: LoadingService
+  // status?: EditStatusConfig;
+}
+export interface GenericService<T, ID, R> {
+  metadata?(): Attributes | undefined
+  keys?(): string[]
+  load(id: ID, ctx?: any): Promise<T | null>
+  patch?(obj: Partial<T>, ctx?: any): Promise<R>
+  create(obj: T, ctx?: any): Promise<R>
+  update(obj: T, ctx?: any): Promise<R>
+  delete?(id: ID, ctx?: any): Promise<number>
+}
+export function handleVersion<T>(obj: T, version?: string): void {
+  if (obj && version && version.length > 0) {
+    const v = (obj as any)[version]
+    if (v && typeof v === "number") {
+      ;(obj as any)[version] = v + 1
+    } else {
+      ;(obj as any)[version] = 1
+    }
+  }
+}
 export class BaseEditComponent<T, ID> extends BaseComponent {
   constructor(
     protected service: GenericService<T, ID, number | number | T | ErrorMessage[]>,
@@ -772,6 +917,125 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
     this.load(id)
   }
 }
+
+export interface SearchParameter {
+  resource: ResourceService
+  showMessage: (msg: string, option?: string) => void
+  showError: (m: string, callback?: () => void, h?: string) => void
+  ui?: UIService
+  getLocale?: (profile?: string) => Locale
+  loading?: LoadingService
+  auto?: boolean
+}
+export function more(com: Pagination): void {
+  com.append = true
+  if (!com.page) {
+    com.page = 1
+  } else {
+    com.page = com.page + 1
+  }
+}
+export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable, fields?: string[]): S {
+  obj.fields = fields
+  if (searchable.page && searchable.page > 1) {
+    obj.page = searchable.page
+  } else {
+    delete obj.page
+  }
+  obj.limit = searchable.limit
+  if (searchable.appendMode && searchable.initPageSize !== searchable.limit) {
+    obj.firstLimit = searchable.initPageSize
+  } else {
+    delete obj.firstLimit
+  }
+  if (searchable.sortField && searchable.sortField.length > 0) {
+    obj.sort = searchable.sortType === "-" ? "-" + searchable.sortField : searchable.sortField
+  } else {
+    delete obj.sort
+  }
+  return obj
+}
+export function append<T>(list?: T[], results?: T[]): T[] {
+  if (list && results) {
+    for (const obj of results) {
+      list.push(obj)
+    }
+  }
+  if (!list) {
+    return []
+  }
+  return list
+}
+export function handleAppend<T>(com: Pagination, list: T[], limit?: number, nextPageToken?: string): void {
+  if (!limit || limit === 0) {
+    com.appendable = false
+  } else {
+    if (!nextPageToken || nextPageToken.length === 0 || list.length < limit) {
+      com.appendable = false
+    } else {
+      com.appendable = true
+    }
+  }
+  if (!list || list.length === 0) {
+    com.appendable = false
+  }
+}
+export function formatResults<T>(
+  results: T[],
+  pageIndex?: number,
+  pageSize?: number,
+  initPageSize?: number,
+  sequenceNo?: string,
+  ft?: (oj: T, lc?: Locale) => T,
+  lc?: Locale,
+): void {
+  if (results && results.length > 0) {
+    let hasSequencePro = false
+    if (ft) {
+      if (sequenceNo && sequenceNo.length > 0) {
+        for (const obj of results) {
+          if ((obj as any)[sequenceNo]) {
+            hasSequencePro = true
+          }
+          ft(obj, lc)
+        }
+      } else {
+        for (const obj of results) {
+          ft(obj, lc)
+        }
+      }
+    } else if (sequenceNo && sequenceNo.length > 0) {
+      for (const obj of results) {
+        if ((obj as any)[sequenceNo]) {
+          hasSequencePro = true
+        }
+      }
+    }
+    if (sequenceNo && sequenceNo.length > 0 && !hasSequencePro) {
+      if (!pageIndex) {
+        pageIndex = 1
+      }
+      if (pageSize) {
+        if (!initPageSize) {
+          initPageSize = pageSize
+        }
+        if (pageIndex <= 1) {
+          for (let i = 0; i < results.length; i++) {
+            ;(results[i] as any)[sequenceNo] = i - pageSize + pageSize * pageIndex + 1
+          }
+        } else {
+          for (let i = 0; i < results.length; i++) {
+            ;(results[i] as any)[sequenceNo] = i - pageSize + pageSize * pageIndex + 1 - (pageSize - initPageSize)
+          }
+        }
+      } else {
+        for (let i = 0; i < results.length; i++) {
+          ;(results[i] as any)[sequenceNo] = i + 1
+        }
+      }
+    }
+  }
+}
 export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   constructor(
     sv: ((s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
@@ -936,10 +1200,10 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       obj = obj2 ? obj2 : {}
     }
     const obj3 = optimizeFilter(obj, this, this.getFields())
+    /*
     if (this.excluding) {
       obj3.excluding = this.excluding
     }
-    /*
     if (this.keys && this.keys.length === 1) {
       const l = this.getList();
       if (l && l.length > 0) {
@@ -1196,6 +1460,22 @@ export class SearchComponent<T, S extends Filter> extends BaseSearchComponent<T,
   }
 }
 
+export interface DiffParameter {
+  resource: ResourceService
+  showMessage: (msg: string, option?: string) => void
+  showError: (m: string, callback?: () => void, header?: string) => void
+  loading?: LoadingService
+  // status?: DiffStatusConfig;
+}
+export interface DiffService<T, ID> {
+  keys(): string[]
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>
+}
+export interface ApprService<ID> {
+  approve(id: ID, ctx?: any): Promise<number | string>
+  reject(id: ID, ctx?: any): Promise<number | string>
+}
+export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {}
 export class BaseDiffApprComponent<T, ID> {
   constructor(
     protected service: DiffApprService<T, ID>,

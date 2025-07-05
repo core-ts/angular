@@ -4,16 +4,7 @@ export interface ElementRef<T = any> {
 export interface ViewContainerRef {
   element: ElementRef
 }
-export interface SearchPermission {
-  viewable?: boolean
-  addable?: boolean
-  editable?: boolean
-  deletable?: boolean
-  approvable?: boolean
-}
-export interface LocaleFormatter<T> {
-  format(obj: T, locale: Locale): T
-}
+/*
 export interface Filter {
   page?: number
   limit?: number
@@ -25,37 +16,6 @@ export interface Filter {
   excluding?: any
   refId?: string | number
 }
-export interface SearchResult<T> {
-  total?: number
-  list: T[]
-  nextPageToken?: string
-  last?: boolean
-}
-export interface SearchService<T, S extends Filter> {
-  keys?(): string[]
-  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>>
-}
-export interface SearchParameter {
-  resource: ResourceService
-  showMessage: (msg: string, option?: string) => void
-  showError: (m: string, callback?: () => void, h?: string) => void
-  ui?: UIService
-  getLocale?: (profile?: string) => Locale
-  loading?: LoadingService
-  auto?: boolean
-}
-export interface ViewParameter {
-  resource: ResourceService
-  showError: (m: string, callback?: () => void, header?: string) => void
-  getLocale?: (profile?: string) => Locale
-  loading?: LoadingService
-}
-export interface ViewService<T, ID> {
-  metadata?(): Attributes | undefined
-  keys?(): string[]
-  load(id: ID, ctx?: any): Promise<T | null>
-}
-/*
 export interface EditStatusConfig {
   duplicate_key: number | string;
   not_found: number | string;
@@ -97,27 +57,6 @@ export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
   return s;
 }
 */
-export interface DiffParameter {
-  resource: ResourceService
-  showMessage: (msg: string, option?: string) => void
-  showError: (m: string, callback?: () => void, header?: string) => void
-  loading?: LoadingService
-  // status?: DiffStatusConfig;
-}
-export interface DiffModel<T, ID> {
-  id?: ID
-  origin?: T
-  value: T
-}
-export interface DiffService<T, ID> {
-  keys(): string[]
-  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>
-}
-export interface ApprService<ID> {
-  approve(id: ID, ctx?: any): Promise<number | string>
-  reject(id: ID, ctx?: any): Promise<number | string>
-}
-export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {}
 
 export interface Currency {
   currencyCode: string
@@ -190,42 +129,6 @@ export interface StringMap {
 export interface ResourceService {
   resource(): StringMap
   value(key: string, param?: any): string
-  format(f: string, ...args: any[]): string
-}
-export interface Message {
-  message: string
-  title: string
-  yes?: string
-  no?: string
-}
-export function getString(key: string, gv: StringMap | ((key: string) => string)): string {
-  if (typeof gv === "function") {
-    return gv(key)
-  } else {
-    return gv[key]
-  }
-}
-export function message(gv: StringMap | ((key: string) => string), msg: string, title?: string, yes?: string, no?: string): Message {
-  const m2 = msg && msg.length > 0 ? getString(msg, gv) : ""
-  const m: Message = { message: m2, title: "" }
-  if (title && title.length > 0) {
-    m.title = getString(title, gv)
-  }
-  if (yes && yes.length > 0) {
-    m.yes = getString(yes, gv)
-  }
-  if (no && no.length > 0) {
-    m.no = getString(no, gv)
-  }
-  return m
-}
-export function messageByHttpStatus(status: number, gv: StringMap | ((key: string) => string)): string {
-  const k = "error_" + status
-  let msg = getString(k, gv)
-  if (!msg || msg.length === 0) {
-    msg = getString("error_500", gv)
-  }
-  return msg
 }
 
 export interface Locale {
@@ -240,11 +143,6 @@ export interface Locale {
   currencySymbol: string
   currencyPattern: number
   currencySample?: string
-}
-
-export interface LoadingService {
-  showLoading(firstTime?: boolean): void
-  hideLoading(): void
 }
 
 export interface ErrorMessage {
@@ -265,16 +163,7 @@ export interface UIService {
 
   registerEvents?(form: HTMLFormElement): void
 }
-export interface AlertService {
-  confirm(msg: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void): void
-  alertError(msg: string, header?: string, detail?: string, callback?: () => void): void
-}
 
-export interface Metadata {
-  name?: string
-  attributes: Attributes
-  source?: string
-}
 export interface Attributes {
   [key: string]: Attribute
 }
@@ -303,81 +192,4 @@ export interface MetaModel {
   objectFields?: MetaModel[]
   arrayFields?: MetaModel[]
   version?: string
-}
-export function error(err: any, gv: StringMap | ((key: string) => string), ae: (msg: string, callback?: () => void, header?: string) => void) {
-  const title = getString("error", gv)
-  let msg = getString("error_internal", gv)
-  if (!err) {
-    ae(msg, undefined, title)
-    return
-  }
-  const data = err && err.response ? err.response : err
-  if (data) {
-    const status = data.status
-    if (status && !isNaN(status)) {
-      msg = messageByHttpStatus(status, gv)
-    }
-    ae(msg, undefined, title)
-  } else {
-    ae(msg, undefined, title)
-  }
-}
-export function getModelName(form?: HTMLFormElement): string {
-  if (form) {
-    const a = form.getAttribute("model-name")
-    if (a && a.length > 0) {
-      return a
-    }
-    const b = form.name
-    if (b) {
-      if (b.endsWith("Form")) {
-        return b.substring(0, b.length - 4)
-      }
-      return b
-    }
-  }
-  return ""
-}
-export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
-  try {
-    const element = e.target as HTMLInputElement
-    const form = element.form
-    if (form) {
-      const container = form.childNodes[1] as HTMLElement
-      const elementRect = element.getBoundingClientRect()
-      const absoluteElementTop = elementRect.top + window.pageYOffset
-      const middle = absoluteElementTop - window.innerHeight / 2
-      const scrollTop = container.scrollTop
-      const timeOut = isUseTimeOut ? 300 : 0
-      const isChrome = navigator.userAgent.search("Chrome") > 0
-      setTimeout(() => {
-        if (isChrome) {
-          const scrollPosition = scrollTop === 0 ? elementRect.top + 64 : scrollTop + middle
-          container.scrollTo(0, Math.abs(scrollPosition))
-        } else {
-          container.scrollTo(0, Math.abs(scrollTop + middle))
-        }
-      }, timeOut)
-    }
-  } catch (e) {
-    console.log(e)
-  }
-}
-export function showLoading(loading?: LoadingService | ((firstTime?: boolean) => void)): void {
-  if (loading) {
-    if (typeof loading === "function") {
-      loading()
-    } else {
-      loading.showLoading()
-    }
-  }
-}
-export function hideLoading(loading?: LoadingService | (() => void)): void {
-  if (loading) {
-    if (typeof loading === "function") {
-      loading()
-    } else {
-      loading.hideLoading()
-    }
-  }
 }

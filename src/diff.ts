@@ -1,4 +1,3 @@
-import { DiffModel } from "./core"
 import { clone, diff } from "./reflect"
 
 export function showDiff<T>(form: HTMLFormElement, value: T, origin?: T): void {
@@ -17,6 +16,12 @@ export function showDiff<T>(form: HTMLFormElement, value: T, origin?: T): void {
       }
     }
   }
+}
+
+export interface DiffModel<T, ID> {
+  id?: ID
+  origin?: T
+  value: T
 }
 export function formatDiffModel<T, ID>(obj: DiffModel<T, ID>, formatFields?: (obj3: T) => T): DiffModel<T, ID> {
   if (!obj) {

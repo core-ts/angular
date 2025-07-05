@@ -4,46 +4,6 @@ import { lastValueFrom } from "rxjs"
 import { Headers } from "./core"
 import { focusFirstElement } from "./formutil"
 
-export interface ActivatedRoute {
-  /** An observable of the matrix parameters scoped to this route. */
-  params: any
-}
-export function getId<ID>(route: ActivatedRoute, keys?: string[], id?: ID): ID | null {
-  if (id) {
-    return id
-  } else {
-    return buildId(route, keys)
-  }
-}
-export function buildId<ID>(route: ActivatedRoute, keys?: string[]): ID | null {
-  if (!route) {
-    return null
-  }
-  const param: any = route.params
-  const obj = param._value
-  if (!keys || keys.length === 0) {
-    return obj["id"]
-  }
-  if (!(keys && keys.length > 0)) {
-    return null
-  }
-  if (keys.length === 1) {
-    const x = obj[keys[0]]
-    if (x && x !== "") {
-      return x
-    }
-    return obj["id"]
-  }
-  const id: any = {}
-  for (const key of keys) {
-    const v = obj[key]
-    if (!v) {
-      return null
-    }
-    id[key] = v
-  }
-  return id
-}
 export function initElement(viewContainerRef?: ViewContainerRef | any, initMat?: (f: HTMLFormElement) => void): HTMLFormElement | undefined {
   if (!viewContainerRef) {
     return undefined
