@@ -1,59 +1,59 @@
 export interface ElementRef<T = any> {
-  nativeElement: T;
+  nativeElement: T
 }
 export interface ViewContainerRef {
-  element: ElementRef;
+  element: ElementRef
 }
 export interface SearchPermission {
-  viewable?: boolean;
-  addable?: boolean;
-  editable?: boolean;
-  deletable?: boolean;
-  approvable?: boolean;
+  viewable?: boolean
+  addable?: boolean
+  editable?: boolean
+  deletable?: boolean
+  approvable?: boolean
 }
 export interface LocaleFormatter<T> {
-  format(obj: T, locale: Locale): T;
+  format(obj: T, locale: Locale): T
 }
 export interface Filter {
-  page?: number;
-  limit?: number;
-  firstLimit?: number;
-  fields?: string[];
-  sort?: string;
+  page?: number
+  limit?: number
+  firstLimit?: number
+  fields?: string[]
+  sort?: string
 
-  q?: string;
-  excluding?: any;
-  refId?: string | number;
+  q?: string
+  excluding?: any
+  refId?: string | number
 }
 export interface SearchResult<T> {
-  total?: number;
-  list: T[];
-  nextPageToken?: string;
-  last?: boolean;
+  total?: number
+  list: T[]
+  nextPageToken?: string
+  last?: boolean
 }
 export interface SearchService<T, S extends Filter> {
-  keys?(): string[];
-  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>>;
+  keys?(): string[]
+  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>>
 }
 export interface SearchParameter {
-  resource: ResourceService;
-  showMessage: (msg: string, option?: string) => void;
-  showError: (m: string, callback?: () => void, h?: string) => void;
-  ui?: UIService;
-  getLocale?: (profile?: string) => Locale;
-  loading?: LoadingService;
-  auto?: boolean;
+  resource: ResourceService
+  showMessage: (msg: string, option?: string) => void
+  showError: (m: string, callback?: () => void, h?: string) => void
+  ui?: UIService
+  getLocale?: (profile?: string) => Locale
+  loading?: LoadingService
+  auto?: boolean
 }
 export interface ViewParameter {
-  resource: ResourceService;
-  showError: (m: string, callback?: () => void, header?: string) => void;
-  getLocale?: (profile?: string) => Locale;
-  loading?: LoadingService;
+  resource: ResourceService
+  showError: (m: string, callback?: () => void, header?: string) => void
+  getLocale?: (profile?: string) => Locale
+  loading?: LoadingService
 }
 export interface ViewService<T, ID> {
-  metadata?(): Attributes | undefined;
-  keys?(): string[];
-  load(id: ID, ctx?: any): Promise<T | null>;
+  metadata?(): Attributes | undefined
+  keys?(): string[]
+  load(id: ID, ctx?: any): Promise<T | null>
 }
 /*
 export interface EditStatusConfig {
@@ -98,270 +98,286 @@ export function createDiffStatus(status?: DiffStatusConfig): DiffStatusConfig {
 }
 */
 export interface DiffParameter {
-  resource: ResourceService;
-  showMessage: (msg: string, option?: string) => void;
-  showError: (m: string, callback?: () => void, header?: string) => void;
-  loading?: LoadingService;
+  resource: ResourceService
+  showMessage: (msg: string, option?: string) => void
+  showError: (m: string, callback?: () => void, header?: string) => void
+  loading?: LoadingService
   // status?: DiffStatusConfig;
 }
 export interface DiffModel<T, ID> {
-  id?: ID;
-  origin?: T;
-  value: T;
+  id?: ID
+  origin?: T
+  value: T
 }
 export interface DiffService<T, ID> {
-  keys(): string[];
-  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>;
+  keys(): string[]
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>
 }
 export interface ApprService<ID> {
-  approve(id: ID, ctx?: any): Promise<number | string>;
-  reject(id: ID, ctx?: any): Promise<number | string>;
+  approve(id: ID, ctx?: any): Promise<number | string>
+  reject(id: ID, ctx?: any): Promise<number | string>
 }
-export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {
-}
+export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {}
 
 export interface Currency {
-  currencyCode: string;
-  decimalDigits: number;
-  currencySymbol: string;
+  currencyCode: string
+  decimalDigits: number
+  currencySymbol: string
 }
 export interface Headers {
-  [key: string]: any;
+  [key: string]: any
 }
 // tslint:disable-next-line:class-name
 export class resources {
-  static fields = "fields";
-  static page = "page";
-  static defaultLimit = 24;
-  static limit = "limit";
-  static limits = [12, 24, 60, 100, 120, 180, 300, 600];
-  static _cache: any = {};
-  static cache = true;
-  static ignoreDate?: boolean;
-  private static _preg = / |\-|\.|\(|\)/g;
-  static format1 = / |,|\$|€|£|¥|'|٬|،| /g;
-  static format2 = / |\.|\$|€|£|¥|'|٬|،| /g;
-  static currency?: (currencyCode: string) => Currency | undefined;
-  static formatNumber?: (value: number, scale?: number, locale?: Locale) => string;
-  static formatPhone?: (phone: string) => string;
-  static formatFax?: (fax: string) => string;
-  static options?: () => { headers?: Headers };
+  static fields = "fields"
+  static page = "page"
+  static defaultLimit = 24
+  static limit = "limit"
+  static limits = [12, 24, 60, 100, 120, 180, 300, 600]
+  static _cache: any = {}
+  static cache = true
+  static ignoreDate?: boolean
+  private static _preg = / |\-|\.|\(|\)/g
+  static format1 = / |,|\$|€|£|¥|'|٬|،| /g
+  static format2 = / |\.|\$|€|£|¥|'|٬|،| /g
+  static currency?: (currencyCode: string) => Currency | undefined
+  static formatNumber?: (value: number, scale?: number, locale?: Locale) => string
+  static formatPhone?: (phone: string) => string
+  static formatFax?: (fax: string) => string
+  static options?: () => { headers?: Headers }
 
   static removePhoneFormat?(phone: string): string {
     if (phone) {
-      return phone.replace(resources._preg, '');
+      return phone.replace(resources._preg, "")
     }
-    return phone;
+    return phone
   }
   static removeFaxFormat?(fax: string): string {
     if (fax) {
-      return fax.replace(resources._preg, '');
+      return fax.replace(resources._preg, "")
     }
-    return fax;
+    return fax
   }
 }
 
-export type Type = 'ObjectId' | 'date' | 'datetime' | 'time'
-  | 'boolean' | 'number' | 'integer' | 'string' | 'text'
-  | 'object' | 'array' | 'binary'
-  | 'primitives' | 'booleans' | 'numbers' | 'integers' | 'strings' | 'dates' | 'datetimes' | 'times';
+export type Type =
+  | "ObjectId"
+  | "date"
+  | "datetime"
+  | "time"
+  | "boolean"
+  | "number"
+  | "integer"
+  | "string"
+  | "text"
+  | "object"
+  | "array"
+  | "binary"
+  | "primitives"
+  | "booleans"
+  | "numbers"
+  | "integers"
+  | "strings"
+  | "dates"
+  | "datetimes"
+  | "times"
 
-export type Format = 'currency' | 'percentage' | 'email' | 'url' | 'phone' | 'fax' | 'ipv4' | 'ipv6';
+export type Format = "currency" | "percentage" | "email" | "url" | "phone" | "fax" | "ipv4" | "ipv6"
 
 export interface StringMap {
-  [key: string]: string;
+  [key: string]: string
 }
 export interface ResourceService {
-  resource(): StringMap;
-  value(key: string, param?: any): string;
-  format(f: string, ...args: any[]): string;
+  resource(): StringMap
+  value(key: string, param?: any): string
+  format(f: string, ...args: any[]): string
 }
 export interface Message {
-  message: string;
-  title: string;
-  yes?: string;
-  no?: string;
+  message: string
+  title: string
+  yes?: string
+  no?: string
 }
 export function getString(key: string, gv: StringMap | ((key: string) => string)): string {
-  if (typeof gv === 'function') {
-    return gv(key);
+  if (typeof gv === "function") {
+    return gv(key)
   } else {
-    return gv[key];
+    return gv[key]
   }
 }
 export function message(gv: StringMap | ((key: string) => string), msg: string, title?: string, yes?: string, no?: string): Message {
-  const m2 = (msg && msg.length > 0 ? getString(msg, gv) : '');
-  const m: Message = { message: m2, title: '' };
+  const m2 = msg && msg.length > 0 ? getString(msg, gv) : ""
+  const m: Message = { message: m2, title: "" }
   if (title && title.length > 0) {
-    m.title = getString(title, gv);
+    m.title = getString(title, gv)
   }
   if (yes && yes.length > 0) {
-    m.yes = getString(yes, gv);
+    m.yes = getString(yes, gv)
   }
   if (no && no.length > 0) {
-    m.no = getString(no, gv);
+    m.no = getString(no, gv)
   }
-  return m;
+  return m
 }
 export function messageByHttpStatus(status: number, gv: StringMap | ((key: string) => string)): string {
-  const k = 'error_' + status;
-  let msg = getString(k, gv);
+  const k = "error_" + status
+  let msg = getString(k, gv)
   if (!msg || msg.length === 0) {
-    msg = getString('error_500', gv);
+    msg = getString("error_500", gv)
   }
-  return msg;
+  return msg
 }
 
 export interface Locale {
-  id?: string;
-  countryCode: string;
-  dateFormat: string;
-  firstDayOfWeek: number;
-  decimalSeparator: string;
-  groupSeparator: string;
-  decimalDigits: number;
-  currencyCode: string;
-  currencySymbol: string;
-  currencyPattern: number;
-  currencySample?: string;
+  id?: string
+  countryCode: string
+  dateFormat: string
+  firstDayOfWeek: number
+  decimalSeparator: string
+  groupSeparator: string
+  decimalDigits: number
+  currencyCode: string
+  currencySymbol: string
+  currencyPattern: number
+  currencySample?: string
 }
 
 export interface LoadingService {
-  showLoading(firstTime?: boolean): void;
-  hideLoading(): void;
+  showLoading(firstTime?: boolean): void
+  hideLoading(): void
 }
 
 export interface ErrorMessage {
-  field: string;
-  code: string;
-  param?: string | number | Date;
-  message?: string;
+  field: string
+  code: string
+  param?: string | number | Date
+  message?: string
 }
 export interface UIService {
-  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string | number | boolean | null | undefined;
-  decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string | null): any;
+  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string | number | boolean | null | undefined
+  decodeFromForm(form: HTMLFormElement, locale?: Locale, currencyCode?: string | null): any
 
-  validateForm(form?: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean;
-  removeFormError(form: HTMLFormElement): void;
-  removeError(el: HTMLInputElement): void;
-  showFormError(form?: HTMLFormElement, errors?: ErrorMessage[], focusFirst?: boolean): ErrorMessage[];
-  buildErrorMessage(errors: ErrorMessage[]): string;
+  validateForm(form?: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean
+  removeFormError(form: HTMLFormElement): void
+  removeError(el: HTMLInputElement): void
+  showFormError(form?: HTMLFormElement, errors?: ErrorMessage[], focusFirst?: boolean): ErrorMessage[]
+  buildErrorMessage(errors: ErrorMessage[]): string
 
-  registerEvents?(form: HTMLFormElement): void;
+  registerEvents?(form: HTMLFormElement): void
 }
 export interface AlertService {
-  confirm(msg: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void): void;
-  alertError(msg: string, header?: string, detail?: string, callback?: () => void): void;
+  confirm(msg: string, header: string, yesCallback?: () => void, btnLeftText?: string, btnRightText?: string, noCallback?: () => void): void
+  alertError(msg: string, header?: string, detail?: string, callback?: () => void): void
 }
 
 export interface Metadata {
-  name?: string;
-  attributes: Attributes;
-  source?: string;
+  name?: string
+  attributes: Attributes
+  source?: string
 }
 export interface Attributes {
-  [key: string]: Attribute;
+  [key: string]: Attribute
 }
 export interface Attribute {
-  name?: string;
-  field?: string;
-  type?: Type;
-  format?: Format;
-  key?: boolean;
-  version?: boolean;
-  ignored?: boolean;
-  typeof?: Attributes;
-  scale?: number;
-  noformat?: boolean;
+  name?: string
+  field?: string
+  type?: Type
+  format?: Format
+  key?: boolean
+  version?: boolean
+  ignored?: boolean
+  typeof?: Attributes
+  scale?: number
+  noformat?: boolean
 }
 export interface MetaModel {
-  attributes: Attributes;
-  attributeName?: string;
-  keys?: string[];
-  dateFields?: string[];
-  integerFields?: string[];
-  numberFields?: string[];
-  currencyFields?: string[];
-  phoneFields?: string[];
-  faxFields?: string[];
-  objectFields?: MetaModel[];
-  arrayFields?: MetaModel[];
-  version?: string;
+  attributes: Attributes
+  attributeName?: string
+  keys?: string[]
+  dateFields?: string[]
+  integerFields?: string[]
+  numberFields?: string[]
+  currencyFields?: string[]
+  phoneFields?: string[]
+  faxFields?: string[]
+  objectFields?: MetaModel[]
+  arrayFields?: MetaModel[]
+  version?: string
 }
 export function error(err: any, gv: StringMap | ((key: string) => string), ae: (msg: string, callback?: () => void, header?: string) => void) {
-  const title = getString('error', gv);
-  let msg = getString('error_internal', gv);
+  const title = getString("error", gv)
+  let msg = getString("error_internal", gv)
   if (!err) {
-    ae(msg, undefined, title);
-    return;
+    ae(msg, undefined, title)
+    return
   }
-  const data = err && err.response ? err.response : err;
+  const data = err && err.response ? err.response : err
   if (data) {
-    const status = data.status;
+    const status = data.status
     if (status && !isNaN(status)) {
-      msg = messageByHttpStatus(status, gv);
+      msg = messageByHttpStatus(status, gv)
     }
-    ae(msg, undefined, title);
+    ae(msg, undefined, title)
   } else {
-    ae(msg, undefined, title);
+    ae(msg, undefined, title)
   }
 }
 export function getModelName(form?: HTMLFormElement): string {
   if (form) {
-    const a = form.getAttribute('model-name');
+    const a = form.getAttribute("model-name")
     if (a && a.length > 0) {
-      return a;
+      return a
     }
-    const b = form.name;
+    const b = form.name
     if (b) {
-      if (b.endsWith('Form')) {
-        return b.substring(0, b.length - 4);
+      if (b.endsWith("Form")) {
+        return b.substring(0, b.length - 4)
       }
-      return b;
+      return b
     }
   }
-  return '';
+  return ""
 }
 export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
   try {
-    const element = e.target as HTMLInputElement;
-    const form = element.form;
+    const element = e.target as HTMLInputElement
+    const form = element.form
     if (form) {
-      const container = form.childNodes[1] as HTMLElement;
-      const elementRect = element.getBoundingClientRect();
-      const absoluteElementTop = elementRect.top + window.pageYOffset;
-      const middle = absoluteElementTop - (window.innerHeight / 2);
-      const scrollTop = container.scrollTop;
-      const timeOut = isUseTimeOut ? 300 : 0;
-      const isChrome = navigator.userAgent.search('Chrome') > 0;
+      const container = form.childNodes[1] as HTMLElement
+      const elementRect = element.getBoundingClientRect()
+      const absoluteElementTop = elementRect.top + window.pageYOffset
+      const middle = absoluteElementTop - window.innerHeight / 2
+      const scrollTop = container.scrollTop
+      const timeOut = isUseTimeOut ? 300 : 0
+      const isChrome = navigator.userAgent.search("Chrome") > 0
       setTimeout(() => {
         if (isChrome) {
-          const scrollPosition = scrollTop === 0 ? (elementRect.top + 64) : (scrollTop + middle);
-          container.scrollTo(0, Math.abs(scrollPosition));
+          const scrollPosition = scrollTop === 0 ? elementRect.top + 64 : scrollTop + middle
+          container.scrollTo(0, Math.abs(scrollPosition))
         } else {
-          container.scrollTo(0, Math.abs(scrollTop + middle));
+          container.scrollTo(0, Math.abs(scrollTop + middle))
         }
-      }, timeOut);
+      }, timeOut)
     }
   } catch (e) {
-    console.log(e);
+    console.log(e)
   }
-};
+}
 export function showLoading(loading?: LoadingService | ((firstTime?: boolean) => void)): void {
   if (loading) {
-    if (typeof loading === 'function') {
-      loading();
+    if (typeof loading === "function") {
+      loading()
     } else {
-      loading.showLoading();
+      loading.showLoading()
     }
   }
 }
 export function hideLoading(loading?: LoadingService | (() => void)): void {
   if (loading) {
-    if (typeof loading === 'function') {
-      loading();
+    if (typeof loading === "function") {
+      loading()
     } else {
-      loading.hideLoading();
+      loading.hideLoading()
     }
   }
 }

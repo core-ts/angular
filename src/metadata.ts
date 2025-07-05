@@ -1,121 +1,121 @@
-import {Attribute, Attributes, MetaModel} from './core';
+import { Attribute, Attributes, MetaModel } from "./core"
 
 export function build(attributes: Attributes, ignoreDate?: boolean): MetaModel {
-  const meta: MetaModel = {attributes};
-  const pks: string[] = new Array<string>();
-  const dateFields = new Array<string>();
-  const integerFields = new Array<string>();
-  const numberFields = new Array<string>();
-  const currencyFields = new Array<string>();
-  const phoneFields = new Array<string>();
-  const faxFields = new Array<string>();
-  const objectFields = new Array<MetaModel>();
-  const arrayFields = new Array<MetaModel>();
-  const keys: string[] = Object.keys(attributes);
+  const meta: MetaModel = { attributes }
+  const pks: string[] = new Array<string>()
+  const dateFields = new Array<string>()
+  const integerFields = new Array<string>()
+  const numberFields = new Array<string>()
+  const currencyFields = new Array<string>()
+  const phoneFields = new Array<string>()
+  const faxFields = new Array<string>()
+  const objectFields = new Array<MetaModel>()
+  const arrayFields = new Array<MetaModel>()
+  const keys: string[] = Object.keys(attributes)
   for (const key of keys) {
-    const attr: Attribute = attributes[key];
+    const attr: Attribute = attributes[key]
     if (attr) {
-      attr.name = key;
+      attr.name = key
       if (attr.version) {
-        meta.version = attr.name;
+        meta.version = attr.name
       }
       if (attr.ignored !== true) {
         if (attr.key) {
-          pks.push(attr.name);
+          pks.push(attr.name)
         }
       }
 
       switch (attr.type) {
-        case 'string': {
+        case "string": {
           switch (attr.format) {
-            case 'phone':
-              phoneFields.push(attr.name);
-              break;
-            case 'fax':
-              faxFields.push(attr.name);
-              break;
+            case "phone":
+              phoneFields.push(attr.name)
+              break
+            case "fax":
+              faxFields.push(attr.name)
+              break
             default:
-              break;
+              break
           }
-          break;
+          break
         }
-        case 'number': {
+        case "number": {
           switch (attr.format) {
-            case 'currency':
-              currencyFields.push(attr.name);
-              break;
+            case "currency":
+              currencyFields.push(attr.name)
+              break
             /*
             case FormatType.Percentage:
               percentageFields.push(attr.name);
               break;
             */
             default:
-              numberFields.push(attr.name);
-              break;
+              numberFields.push(attr.name)
+              break
           }
-          break;
+          break
         }
-        case 'integer': {
-          integerFields.push(attr.name);
-          break;
+        case "integer": {
+          integerFields.push(attr.name)
+          break
         }
-        case 'date': {
+        case "date": {
           if (ignoreDate) {
-            dateFields.push(attr.name);
+            dateFields.push(attr.name)
           }
-          break;
+          break
         }
-        case 'datetime': {
-          dateFields.push(attr.name);
-          break;
+        case "datetime": {
+          dateFields.push(attr.name)
+          break
         }
-        case 'object': {
+        case "object": {
           if (attr.typeof) {
-            const x = build(attr.typeof, ignoreDate);
-            x.attributeName = key;
-            objectFields.push(x);
+            const x = build(attr.typeof, ignoreDate)
+            x.attributeName = key
+            objectFields.push(x)
           }
-          break;
+          break
         }
-        case 'array': {
+        case "array": {
           if (attr.typeof) {
-            const y = build(attr.typeof, ignoreDate);
-            y.attributeName = key;
-            arrayFields.push(y);
+            const y = build(attr.typeof, ignoreDate)
+            y.attributeName = key
+            arrayFields.push(y)
           }
-          break;
+          break
         }
         default:
-          break;
+          break
       }
     }
   }
   if (pks.length > 0) {
-    meta.keys = pks;
+    meta.keys = pks
   }
   if (dateFields.length > 0) {
-    meta.dateFields = dateFields;
+    meta.dateFields = dateFields
   }
   if (integerFields.length > 0) {
-    meta.integerFields = integerFields;
+    meta.integerFields = integerFields
   }
   if (numberFields.length > 0) {
-    meta.numberFields = numberFields;
+    meta.numberFields = numberFields
   }
   if (currencyFields.length > 0) {
-    meta.currencyFields = currencyFields;
+    meta.currencyFields = currencyFields
   }
   if (phoneFields.length > 0) {
-    meta.phoneFields = phoneFields;
+    meta.phoneFields = phoneFields
   }
   if (faxFields.length > 0) {
-    meta.faxFields = faxFields;
+    meta.faxFields = faxFields
   }
   if (objectFields.length > 0) {
-    meta.objectFields = objectFields;
+    meta.objectFields = objectFields
   }
   if (arrayFields.length > 0) {
-    meta.arrayFields = arrayFields;
+    meta.arrayFields = arrayFields
   }
-  return meta;
+  return meta
 }

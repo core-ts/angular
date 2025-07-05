@@ -1,157 +1,157 @@
 export function trim(obj: any): void {
-  if (!obj || typeof obj !== 'object' || obj instanceof Date) {
-    return;
+  if (!obj || typeof obj !== "object" || obj instanceof Date) {
+    return
   }
-  const keys = Object.keys(obj);
+  const keys = Object.keys(obj)
   for (const key of keys) {
-    const v = obj[key];
-    if (v == null || v === '' || v === undefined) {
-      delete obj[key];
-    } else if (typeof v === 'object') {
+    const v = obj[key]
+    if (v == null || v === "" || v === undefined) {
+      delete obj[key]
+    } else if (typeof v === "object") {
       if (!Array.isArray(v)) {
-        trim(v);
+        trim(v)
       } else {
         if (v.length === 0) {
-          delete obj[key];
+          delete obj[key]
         } else {
           for (const item of v) {
-            trim(item);
+            trim(item)
           }
         }
       }
     }
   }
-  return obj;
+  return obj
 }
 export function clone(obj: any): any {
   if (!obj) {
-    return obj;
+    return obj
   }
   if (obj instanceof Date) {
-    return new Date(obj.getTime());
+    return new Date(obj.getTime())
   }
-  if (typeof obj !== 'object') {
-    return obj;
+  if (typeof obj !== "object") {
+    return obj
   }
   if (Array.isArray(obj)) {
-    const arr: any[] = [];
+    const arr: any[] = []
     for (const sub of obj) {
-      const c = clone(sub);
-      arr.push(c);
+      const c = clone(sub)
+      arr.push(c)
     }
-    return arr;
+    return arr
   }
-  const x: any = {};
-  const keys = Object.keys(obj);
+  const x: any = {}
+  const keys = Object.keys(obj)
   for (const k of keys) {
-    const v = obj[k];
+    const v = obj[k]
     if (v instanceof Date) {
-      x[k] = new Date(v.getTime());
+      x[k] = new Date(v.getTime())
     } else {
       switch (typeof v) {
-        case 'object':
-          x[k] = clone(v);
-          break;
+        case "object":
+          x[k] = clone(v)
+          break
         default:
-          x[k] = v;
-          break;
+          x[k] = v
+          break
       }
     }
   }
-  return x;
+  return x
 }
 
 export function getDirectValue(obj: any, key: string): any {
   if (obj && obj.hasOwnProperty(key)) {
-    return obj[key];
+    return obj[key]
   }
-  return null;
+  return null
 }
 
 export function setValue(obj: any, key: string, value: any): any {
-  let replaceKey = key.replace(/\[/g, '.[').replace(/\.\./g, '.');
-  if (replaceKey.indexOf('.') === 0) {
-    replaceKey = replaceKey.slice(1, replaceKey.length);
+  let replaceKey = key.replace(/\[/g, ".[").replace(/\.\./g, ".")
+  if (replaceKey.indexOf(".") === 0) {
+    replaceKey = replaceKey.slice(1, replaceKey.length)
   }
-  const keys = replaceKey.split('.');
-  const firstKey = keys.shift();
+  const keys = replaceKey.split(".")
+  const firstKey = keys.shift()
   if (!firstKey) {
-    return;
+    return
   }
-  const isArrayKey = /\[([0-9]+)\]/.test(firstKey);
+  const isArrayKey = /\[([0-9]+)\]/.test(firstKey)
   if (keys.length > 0) {
-    const firstKeyValue = obj[firstKey] || {};
-    const returnValue = setValue(firstKeyValue, keys.join('.'), value);
-    return setKey(obj, isArrayKey, firstKey, returnValue);
+    const firstKeyValue = obj[firstKey] || {}
+    const returnValue = setValue(firstKeyValue, keys.join("."), value)
+    return setKey(obj, isArrayKey, firstKey, returnValue)
   }
-  return setKey(obj, isArrayKey, firstKey, value);
+  return setKey(obj, isArrayKey, firstKey, value)
 }
 const setKey = (_object: any, _isArrayKey: boolean, _key: string, _nextValue: any) => {
   if (_isArrayKey) {
     if (_object.length > _key) {
-      _object[_key] = _nextValue;
+      _object[_key] = _nextValue
     } else {
-      _object.push(_nextValue);
+      _object.push(_nextValue)
     }
   } else {
-    _object[_key] = _nextValue;
+    _object[_key] = _nextValue
   }
-  return _object;
-};
+  return _object
+}
 
 export function diff(obj1: any, obj2: any): string[] {
-  const fields: string[] = [];
-  const key1s = Object.keys(obj1);
+  const fields: string[] = []
+  const key1s = Object.keys(obj1)
   for (const k of key1s) {
-    const v1 = obj1[k];
-    const v2 = obj2[k];
+    const v1 = obj1[k]
+    const v2 = obj2[k]
     if (v1 == null) {
       if (v2 != null) {
-        fields.push(k);
+        fields.push(k)
       }
     } else {
-      if (typeof v1 !== 'object') {
+      if (typeof v1 !== "object") {
         if (v1 !== v2) {
-          fields.push(k);
+          fields.push(k)
         }
       } else {
-        const e = equal(v1, v2);
+        const e = equal(v1, v2)
         if (!e) {
-          fields.push(k);
+          fields.push(k)
         }
       }
     }
   }
-  const key2s = Object.keys(obj2);
-  const ni = notIn(key1s, key2s);
+  const key2s = Object.keys(obj2)
+  const ni = notIn(key1s, key2s)
   for (const n of ni) {
-    fields.push(n);
+    fields.push(n)
   }
-  return fields;
+  return fields
 }
 
 export function makeDiff<T>(o1: T, o2: T, keys?: string[], version?: string): Partial<T> {
-  const obj1: any = o1;
-  const obj2: any = o2;
-  const obj3: any = {};
-  const s = diff(obj1, obj2);
+  const obj1: any = o1
+  const obj2: any = o2
+  const obj3: any = {}
+  const s = diff(obj1, obj2)
   if (s.length === 0) {
-    return obj3;
+    return obj3
   }
   for (const d of s) {
-    obj3[d] = obj2[d];
+    obj3[d] = obj2[d]
   }
   if (keys && keys.length > 0) {
     for (const x of keys) {
       if (x.length > 0) {
-        obj3[x] = obj1[x];
+        obj3[x] = obj1[x]
       }
     }
   }
   if (version && version.length > 0) {
-    obj3[version] = obj1[version];
+    obj3[version] = obj1[version]
   }
-  return obj3;
+  return obj3
 }
 export function hasDiff<T>(o1: T, o2: T, keys?: string[], version?: string): boolean {
   const diff = makeDiff(o1, o2, keys, version)
@@ -160,13 +160,13 @@ export function hasDiff<T>(o1: T, o2: T, keys?: string[], version?: string): boo
 export function isEmptyObject(obj: any): boolean {
   for (let key in obj) {
     if (obj.hasOwnProperty(key)) {
-      return false;
+      return false
     }
   }
-  return true;
+  return true
 }
 interface StringMap {
-  [key: string]: string;
+  [key: string]: string
 }
 export function back<T>(confirm: (msg: string, yesCallback?: () => void) => void, resource: StringMap, o1: T, o2: T, keys?: string[], version?: string) {
   if (!hasDiff(o1, o2, keys, version)) {
@@ -177,94 +177,93 @@ export function back<T>(confirm: (msg: string, yesCallback?: () => void) => void
 }
 
 export function notIn(s1: string[], s2: string[]): string[] {
-  const r: string[] = [];
+  const r: string[] = []
   for (const s of s2) {
     if (s1.indexOf(s) < 0) {
-      r.push(s);
+      r.push(s)
     }
   }
-  return r;
+  return r
 }
 
 export function equal(obj1: any, obj2: any): boolean {
   if (obj1 == null && obj2 == null) {
-    return true;
+    return true
   }
   if (obj1 == null || obj2 == null) {
-    return false;
+    return false
   }
-  if ((typeof obj1) !== (typeof obj2)) {
-    return false;
+  if (typeof obj1 !== typeof obj2) {
+    return false
   }
-  if (typeof obj1 !== 'object') {
-    return obj1 === obj2;
+  if (typeof obj1 !== "object") {
+    return obj1 === obj2
   }
   if (obj1 instanceof Date) {
     if (!(obj2 instanceof Date)) {
-      return false;
+      return false
     }
-    return (obj1.getTime() === obj2.getTime());
+    return obj1.getTime() === obj2.getTime()
   }
-  if ((Array.isArray(obj1) && !Array.isArray(obj2))
-      || (!Array.isArray(obj1) && Array.isArray(obj2))) {
-    return false;
+  if ((Array.isArray(obj1) && !Array.isArray(obj2)) || (!Array.isArray(obj1) && Array.isArray(obj2))) {
+    return false
   }
   if (!Array.isArray(obj1) && !Array.isArray(obj2)) {
-    const key1s = Object.keys(obj1);
-    const key2s = Object.keys(obj2);
+    const key1s = Object.keys(obj1)
+    const key2s = Object.keys(obj2)
     if (key1s.length !== key2s.length) {
-      return false;
+      return false
     }
     for (const k of key1s) {
-      const v = obj1[k];
-      if (typeof v !== 'object') {
+      const v = obj1[k]
+      if (typeof v !== "object") {
         if (v !== obj2[k]) {
-          return false;
+          return false
         }
       } else {
-        const e = equal(v, obj2[k]);
+        const e = equal(v, obj2[k])
         if (e === false) {
-          return false;
+          return false
         }
       }
     }
-    return true;
+    return true
   }
-  return equalArrays(obj1, obj2);
+  return equalArrays(obj1, obj2)
 }
 
 export function equalArrays<T>(ar1: T[], ar2: T[]): boolean {
   if (ar1 == null && ar2 == null) {
-    return true;
+    return true
   }
   if (ar1 == null || ar2 == null) {
-    return false;
+    return false
   }
   if (ar1.length !== ar2.length) {
-    return false;
+    return false
   }
   for (let i = 0; i < ar1.length; i++) {
-    const e = equal(ar1[i], ar2[i]);
+    const e = equal(ar1[i], ar2[i])
     if (e === false) {
-      return false;
+      return false
     }
   }
-  return true;
+  return true
 }
-export function setAll<T>(list: T[]|undefined|null, name: string, v: boolean|string|number): void {
+export function setAll<T>(list: T[] | undefined | null, name: string, v: boolean | string | number): void {
   if (list) {
     for (const obj of list) {
-      (obj as any)[name] = v;
+      ;(obj as any)[name] = v
     }
   }
 }
-export function equalAll<T>(list: T[]|undefined|null, name: string, v: boolean|string|number): boolean {
+export function equalAll<T>(list: T[] | undefined | null, name: string, v: boolean | string | number): boolean {
   if (list) {
     for (const obj of list) {
       if ((obj as any)[name] !== v) {
-        return false;
+        return false
       }
     }
   }
-  return true;
+  return true
 }
