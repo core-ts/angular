@@ -86,23 +86,22 @@ export function getErrorFunc(
   }
   return (p as any).showError
 }
-/*
-export interface EditStatusParameter {
-  status?: EditStatusConfig;
-}
-export function getEditStatusFunc(p: ResourceService|EditStatusParameter, status?: EditStatusConfig): EditStatusConfig {
-  if (status) {
-    return status;
+
+export function showLoading(loading?: LoadingService | ((firstTime?: boolean) => void)): void {
+  if (loading) {
+    if (typeof loading === "function") {
+      loading()
+    } else {
+      loading.showLoading()
+    }
   }
-  return (p as any).status;
 }
-export interface DiffStatusParameter {
-  status?: DiffStatusConfig;
-}
-export function getDiffStatusFunc(p: ResourceService|DiffStatusParameter, status?: DiffStatusConfig): DiffStatusConfig {
-  if (status) {
-    return status;
+export function hideLoading(loading?: LoadingService | (() => void)): void {
+  if (loading) {
+    if (typeof loading === "function") {
+      loading()
+    } else {
+      loading.hideLoading()
+    }
   }
-  return (p as any).status;
 }
-*/

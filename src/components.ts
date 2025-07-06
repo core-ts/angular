@@ -5,7 +5,7 @@ import { createModel } from "./edit"
 import { error, message } from "./error"
 import { format, json } from "./formatter"
 import { focusFirstError, setReadOnly } from "./formutil"
-import { getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService, LoadingService } from "./input"
+import { getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService, hideLoading, LoadingService, showLoading } from "./input"
 import { build as build2 } from "./metadata"
 import { clone, equalAll, makeDiff, setAll, setValue } from "./reflect"
 import {
@@ -24,50 +24,6 @@ import {
   SearchService,
   showPaging,
 } from "./search"
-
-export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
-  try {
-    const element = e.target as HTMLInputElement
-    const form = element.form
-    if (form) {
-      const container = form.childNodes[1] as HTMLElement
-      const elementRect = element.getBoundingClientRect()
-      const absoluteElementTop = elementRect.top + window.pageYOffset
-      const middle = absoluteElementTop - window.innerHeight / 2
-      const scrollTop = container.scrollTop
-      const timeOut = isUseTimeOut ? 300 : 0
-      const isChrome = navigator.userAgent.search("Chrome") > 0
-      setTimeout(() => {
-        if (isChrome) {
-          const scrollPosition = scrollTop === 0 ? elementRect.top + 64 : scrollTop + middle
-          container.scrollTo(0, Math.abs(scrollPosition))
-        } else {
-          container.scrollTo(0, Math.abs(scrollTop + middle))
-        }
-      }, timeOut)
-    }
-  } catch (e) {
-    console.log(e)
-  }
-}
-export function showLoading(loading?: LoadingService | ((firstTime?: boolean) => void)): void {
-  if (loading) {
-    if (typeof loading === "function") {
-      loading()
-    } else {
-      loading.showLoading()
-    }
-  }
-}
-export function hideLoading(loading?: LoadingService | (() => void)): void {
-  if (loading) {
-    if (typeof loading === "function") {
-      loading()
-    } else {
-      loading.hideLoading()
-    }
-  }
-}
 
 export const enLocale = {
   id: "en-US",

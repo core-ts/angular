@@ -67,3 +67,29 @@ export * from "./diff"
 export * from "./formatter"
 export * from "./reflect"
 export * from "./search"
+
+export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
+  try {
+    const element = e.target as HTMLInputElement
+    const form = element.form
+    if (form) {
+      const container = form.childNodes[1] as HTMLElement
+      const elementRect = element.getBoundingClientRect()
+      const absoluteElementTop = elementRect.top + window.pageYOffset
+      const middle = absoluteElementTop - window.innerHeight / 2
+      const scrollTop = container.scrollTop
+      const timeOut = isUseTimeOut ? 300 : 0
+      const isChrome = navigator.userAgent.search("Chrome") > 0
+      setTimeout(() => {
+        if (isChrome) {
+          const scrollPosition = scrollTop === 0 ? elementRect.top + 64 : scrollTop + middle
+          container.scrollTo(0, Math.abs(scrollPosition))
+        } else {
+          container.scrollTo(0, Math.abs(scrollTop + middle))
+        }
+      }, timeOut)
+    }
+  } catch (e) {
+    console.log(e)
+  }
+}

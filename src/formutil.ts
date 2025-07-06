@@ -40,36 +40,6 @@ export function setReadOnly(form?: HTMLFormElement | null, ...args: string[]): v
     }
   }
 }
-export function focusFirstElement(form: HTMLFormElement): void {
-  let i = 0
-  const len = form.length
-  for (i = 0; i < len; i++) {
-    const ctrl = form[i] as HTMLInputElement
-    if (!(ctrl.readOnly || ctrl.disabled)) {
-      let nodeName = ctrl.nodeName
-      const type = ctrl.getAttribute("type")
-      if (type) {
-        const t = type.toUpperCase()
-        if (t === "BUTTON" || t === "SUBMIT") {
-          ctrl.focus()
-        }
-        if (nodeName === "INPUT") {
-          nodeName = t
-        }
-      }
-      if (nodeName !== "BUTTON" && nodeName !== "RESET" && nodeName !== "SUBMIT" && nodeName !== "CHECKBOX" && nodeName !== "RADIO") {
-        ctrl.focus()
-        /*
-        try {
-          ctrl.setSelectionRange(0, ctrl.value.length);
-        } catch (err) {
-        }
-        */
-        return
-      }
-    }
-  }
-}
 export function focusFirstError(form?: HTMLFormElement | null, className?: string): void {
   if (!form) {
     return

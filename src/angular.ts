@@ -2,7 +2,6 @@ import { HttpClient, HttpParams } from "@angular/common/http"
 import { ViewContainerRef } from "@angular/core"
 import { lastValueFrom } from "rxjs"
 import { Headers } from "./core"
-import { focusFirstElement } from "./formutil"
 
 export function initElement(viewContainerRef?: ViewContainerRef | any, initMat?: (f: HTMLFormElement) => void): HTMLFormElement | undefined {
   if (!viewContainerRef) {
@@ -31,6 +30,36 @@ export function initForm(form: HTMLFormElement, initMat?: (f: HTMLFormElement) =
     }, 100)
   }
   return form
+}
+export function focusFirstElement(form: HTMLFormElement): void {
+  let i = 0
+  const len = form.length
+  for (i = 0; i < len; i++) {
+    const ctrl = form[i] as HTMLInputElement
+    if (!(ctrl.readOnly || ctrl.disabled)) {
+      let nodeName = ctrl.nodeName
+      const type = ctrl.getAttribute("type")
+      if (type) {
+        const t = type.toUpperCase()
+        if (t === "BUTTON" || t === "SUBMIT") {
+          ctrl.focus()
+        }
+        if (nodeName === "INPUT") {
+          nodeName = t
+        }
+      }
+      if (nodeName !== "BUTTON" && nodeName !== "RESET" && nodeName !== "SUBMIT" && nodeName !== "CHECKBOX" && nodeName !== "RADIO") {
+        ctrl.focus()
+        /*
+        try {
+          ctrl.setSelectionRange(0, ctrl.value.length);
+        } catch (err) {
+        }
+        */
+        return
+      }
+    }
+  }
 }
 
 export function buildFromUrl<S>(): S {
