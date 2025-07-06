@@ -47,18 +47,7 @@ export function createModel<T>(attributes?: Attributes): T {
   }
   return obj
 }
-/*
-export function handleStatus(x: number|string, st: EditStatusConfig, gv: (k: string, p?: any) => string, se: (m: string, title?: string, detail?: string, callback?: () => void) => void): void {
-  const title = gv('error');
-  if (x === st.version_error) {
-    se(gv('error_version'), title);
-  } else if (x === st.data_corrupt) {
-    se(gv('error_data_corrupt'), title);
-  } else {
-    se(gv('error_internal'), title);
-  }
-}
-*/
+
 export function isSuccessful<T>(x: number | T | ErrorMessage[]): boolean {
   if (Array.isArray(x)) {
     return false

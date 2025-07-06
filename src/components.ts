@@ -1,15 +1,5 @@
 import { buildFromUrl, initElement } from "./angular"
-import {
-  Attributes,
-  ErrorMessage,
-  Locale,
-  MetaModel,
-  resources,
-  ResourceService,
-  StringMap,
-  UIService,
-  ViewContainerRef,
-} from "./core"
+import { Attributes, ErrorMessage, Locale, MetaModel, resources, ResourceService, StringMap, UIService, ViewContainerRef } from "./core"
 import { DiffModel, formatDiffModel, showDiff } from "./diff"
 import { createModel } from "./edit"
 import { error, message } from "./error"
@@ -21,8 +11,6 @@ import { clone, equalAll, makeDiff, setAll, setValue } from "./reflect"
 import {
   addParametersIntoUrl,
   buildMessage,
-  changePage,
-  changePageSize,
   Filter,
   getFields,
   handleSortEvent,
@@ -30,7 +18,7 @@ import {
   initFilter,
   mergeFilter,
   Pagination,
-  reset,
+  removeSortStatus,
   Searchable,
   SearchResult,
   SearchService,
@@ -943,8 +931,8 @@ export function optimizeFilter<S extends Filter>(obj: S, searchable: Searchable,
     delete obj.page
   }
   obj.limit = searchable.limit
-  if (searchable.appendMode && searchable.initPageSize !== searchable.limit) {
-    obj.firstLimit = searchable.initPageSize
+  if (searchable.appendMode && searchable.initLimit !== searchable.limit) {
+    obj.firstLimit = searchable.initLimit
   } else {
     delete obj.firstLimit
   }
@@ -1035,6 +1023,23 @@ export function formatResults<T>(
       }
     }
   }
+}
+export function reset(com: Searchable): void {
+  removeSortStatus(com.sortTarget)
+  com.sortTarget = undefined
+  com.sortField = undefined
+  com.append = false
+  com.page = 1
+}
+export function changePageSize(com: Pagination, size: number): void {
+  com.initLimit = size
+  com.limit = size
+  com.page = 1
+}
+export function changePage(com: Pagination, pageIndex: number, pageSize: number): void {
+  com.page = pageIndex
+  com.limit = pageSize
+  com.append = false
 }
 export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   constructor(

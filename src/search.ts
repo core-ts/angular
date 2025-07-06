@@ -28,7 +28,7 @@ export interface Sortable {
 
 export interface Pagination {
   totalItems: number
-  initPageSize?: number
+  initLimit?: number
   limit?: number
   page?: number
   total?: number
@@ -41,6 +41,16 @@ export interface Pagination {
 
 export interface Searchable extends Pagination, Sortable {}
 
+export function getOffset(limit: number, page?: number, firstLimit?: number): number {
+  const p = page && page > 0 ? page : 1
+  if (firstLimit && firstLimit > 0) {
+    const offset = limit * (p - 2) + firstLimit
+    return offset < 0 ? 0 : offset
+  } else {
+    const offset = limit * (p - 1)
+    return offset < 0 ? 0 : offset
+  }
+}
 export function mergeFilter<S extends Filter>(obj: S, b?: S, limits?: number[], arrs?: string[] | any) {
   let a: any = b
   if (!b) {
@@ -112,12 +122,12 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
     const initPageSize = parseInt(m.firstLimit as any, 10)
     if (initPageSize > 0) {
       m.firstLimit = initPageSize
-      com.initPageSize = initPageSize
+      com.initLimit = initPageSize
     } else {
-      com.initPageSize = com.limit
+      com.initLimit = com.limit
     }
   } else {
-    com.initPageSize = com.limit
+    com.initLimit = com.limit
   }
   const st = m.sort
   if (st && st.length > 0) {
@@ -137,52 +147,6 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
   */
   return m
 }
-
-export function reset(com: Searchable): void {
-  removeSortStatus(com.sortTarget)
-  com.sortTarget = undefined
-  com.sortField = undefined
-  com.append = false
-  com.page = 1
-}
-export function changePageSize(com: Pagination, size: number): void {
-  com.initPageSize = size
-  com.limit = size
-  com.page = 1
-}
-export function changePage(com: Pagination, pageIndex: number, pageSize: number): void {
-  com.page = pageIndex
-  com.limit = pageSize
-  com.append = false
-}
-export function getOffset(limit: number, page?: number, firstLimit?: number): number {
-  const p = page && page > 0 ? page : 1
-  if (firstLimit && firstLimit > 0) {
-    const offset = limit * (p - 2) + firstLimit
-    return offset < 0 ? 0 : offset
-  } else {
-    const offset = limit * (p - 1)
-    return offset < 0 ? 0 : offset
-  }
-}
-
-/*
-export function showResults<T>(com: Pagination, s: Filter, list: T[], total?: number, nextPageToken?: string): void {
-  com.pageIndex = (s.page && s.page >= 1 ? s.page : 1);
-  if (total) {
-    com.totalItems = total;
-  }
-  if (com.appendMode) {
-    let limit = s.limit;
-    if (s.page <= 1 && s.firstLimit && s.firstLimit > 0) {
-      limit = s.firstLimit;
-    }
-    handleAppend(com, limit, list, nextPageToken);
-  } else {
-    showPaging(com, s.limit, list, total);
-  }
-}
-*/
 
 export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, total?: number): void {
   com.total = total
