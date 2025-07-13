@@ -1,7 +1,16 @@
 import { HttpClient, HttpParams } from "@angular/common/http"
 import { ViewContainerRef } from "@angular/core"
 import { lastValueFrom } from "rxjs"
-import { Headers } from "./core"
+import { Headers, StringMap } from "./core"
+import { hasDiff } from "./reflect"
+
+export function back<T>(confirm: (msg: string, yesCallback?: () => void) => void, resource: StringMap, o1: T, o2: T, keys?: string[], version?: string) {
+  if (!hasDiff(o1, o2, keys, version)) {
+    window.history.back()
+  } else {
+    confirm(resource.msg_confirm_back, () => window.history.back())
+  }
+}
 
 export function initElement(viewContainerRef?: ViewContainerRef | any, initMat?: (f: HTMLFormElement) => void): HTMLFormElement | undefined {
   if (!viewContainerRef) {
@@ -50,12 +59,6 @@ export function focusFirstElement(form: HTMLFormElement): void {
       }
       if (nodeName !== "BUTTON" && nodeName !== "RESET" && nodeName !== "SUBMIT" && nodeName !== "CHECKBOX" && nodeName !== "RADIO") {
         ctrl.focus()
-        /*
-        try {
-          ctrl.setSelectionRange(0, ctrl.value.length);
-        } catch (err) {
-        }
-        */
         return
       }
     }

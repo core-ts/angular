@@ -1,28 +1,3 @@
-export function trim(obj: any): void {
-  if (!obj || typeof obj !== "object" || obj instanceof Date) {
-    return
-  }
-  const keys = Object.keys(obj)
-  for (const key of keys) {
-    const v = obj[key]
-    if (v == null || v === "" || v === undefined) {
-      delete obj[key]
-    } else if (typeof v === "object") {
-      if (!Array.isArray(v)) {
-        trim(v)
-      } else {
-        if (v.length === 0) {
-          delete obj[key]
-        } else {
-          for (const item of v) {
-            trim(item)
-          }
-        }
-      }
-    }
-  }
-  return obj
-}
 export function clone(obj: any): any {
   if (!obj) {
     return obj
@@ -59,44 +34,6 @@ export function clone(obj: any): any {
     }
   }
   return x
-}
-
-export function getDirectValue(obj: any, key: string): any {
-  if (obj && obj.hasOwnProperty(key)) {
-    return obj[key]
-  }
-  return null
-}
-
-export function setValue(obj: any, key: string, value: any): any {
-  let replaceKey = key.replace(/\[/g, ".[").replace(/\.\./g, ".")
-  if (replaceKey.indexOf(".") === 0) {
-    replaceKey = replaceKey.slice(1, replaceKey.length)
-  }
-  const keys = replaceKey.split(".")
-  const firstKey = keys.shift()
-  if (!firstKey) {
-    return
-  }
-  const isArrayKey = /\[([0-9]+)\]/.test(firstKey)
-  if (keys.length > 0) {
-    const firstKeyValue = obj[firstKey] || {}
-    const returnValue = setValue(firstKeyValue, keys.join("."), value)
-    return setKey(obj, isArrayKey, firstKey, returnValue)
-  }
-  return setKey(obj, isArrayKey, firstKey, value)
-}
-const setKey = (_object: any, _isArrayKey: boolean, _key: string, _nextValue: any) => {
-  if (_isArrayKey) {
-    if (_object.length > _key) {
-      _object[_key] = _nextValue
-    } else {
-      _object.push(_nextValue)
-    }
-  } else {
-    _object[_key] = _nextValue
-  }
-  return _object
 }
 
 export function diff(obj1: any, obj2: any): string[] {
@@ -165,16 +102,6 @@ export function isEmptyObject(obj: any): boolean {
   }
   return true
 }
-interface StringMap {
-  [key: string]: string
-}
-export function back<T>(confirm: (msg: string, yesCallback?: () => void) => void, resource: StringMap, o1: T, o2: T, keys?: string[], version?: string) {
-  if (!hasDiff(o1, o2, keys, version)) {
-    window.history.back()
-  } else {
-    confirm(resource.msg_confirm_back, () => window.history.back())
-  }
-}
 
 export function notIn(s1: string[], s2: string[]): string[] {
   const r: string[] = []
@@ -231,7 +158,6 @@ export function equal(obj1: any, obj2: any): boolean {
   }
   return equalArrays(obj1, obj2)
 }
-
 export function equalArrays<T>(ar1: T[], ar2: T[]): boolean {
   if (ar1 == null && ar2 == null) {
     return true
@@ -250,6 +176,7 @@ export function equalArrays<T>(ar1: T[], ar2: T[]): boolean {
   }
   return true
 }
+
 export function setAll<T>(list: T[] | undefined | null, name: string, v: boolean | string | number): void {
   if (list) {
     for (const obj of list) {

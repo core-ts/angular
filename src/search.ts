@@ -41,16 +41,6 @@ export interface Pagination {
 
 export interface Searchable extends Pagination, Sortable {}
 
-export function getOffset(limit: number, page?: number, firstLimit?: number): number {
-  const p = page && page > 0 ? page : 1
-  if (firstLimit && firstLimit > 0) {
-    const offset = limit * (p - 2) + firstLimit
-    return offset < 0 ? 0 : offset
-  } else {
-    const offset = limit * (p - 1)
-    return offset < 0 ? 0 : offset
-  }
-}
 export function mergeFilter<S extends Filter>(obj: S, b?: S, limits?: number[], arrs?: string[] | any) {
   let a: any = b
   if (!b) {
@@ -140,22 +130,7 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
       com.sortType = ""
     }
   }
-  /*
-  delete m.page;
-  delete m.limit;
-  delete m.firstLimit;
-  */
   return m
-}
-
-export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, total?: number): void {
-  com.total = total
-  const pageTotal = getPageTotal(pageSize, total)
-  com.pages = pageTotal
-  com.showPaging = !total || com.pages <= 1 || (list && list.length >= total) ? false : true
-  if (total && total >= 0) {
-    com.totalItems = total
-  }
 }
 
 export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | undefined {
@@ -196,7 +171,15 @@ export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | un
   }
   return fields.length > 0 ? fields : undefined
 }
-
+export function showPaging<T>(com: Pagination, list: T[], pageSize?: number, total?: number): void {
+  com.total = total
+  const pageTotal = getPageTotal(pageSize, total)
+  com.pages = pageTotal
+  com.showPaging = !total || com.pages <= 1 || (list && list.length >= total) ? false : true
+  if (total && total >= 0) {
+    com.totalItems = total
+  }
+}
 export function getPageTotal(pageSize?: number, total?: number): number {
   if (!pageSize || pageSize <= 0) {
     return 1
@@ -210,7 +193,6 @@ export function getPageTotal(pageSize?: number, total?: number): number {
     return Math.floor(total / pageSize + 1)
   }
 }
-
 export function formatText(...args: any[]): string {
   let formatted = args[0]
   if (!formatted || formatted === "") {

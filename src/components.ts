@@ -1,13 +1,27 @@
+import { ViewContainerRef } from "@angular/core"
+import { ActivatedRoute } from "@angular/router"
 import { buildFromUrl, initElement } from "./angular"
-import { Attributes, ErrorMessage, Locale, MetaModel, resources, ResourceService, StringMap, UIService, ViewContainerRef } from "./core"
-import { DiffModel, formatDiffModel, showDiff } from "./diff"
+import { Attributes, ErrorMessage, Locale, MetaModel, resources, ResourceService, StringMap, UIService } from "./core"
 import { createModel } from "./edit"
-import { error, message } from "./error"
+import { error } from "./error"
 import { format, json } from "./formatter"
 import { focusFirstError, setReadOnly } from "./formutil"
-import { getAutoSearch, getConfirmFunc, getErrorFunc, getLoadingFunc, getLocaleFunc, getMsgFunc, getResource, getUIService, hideLoading, LoadingService, showLoading } from "./input"
+import {
+  buildId,
+  getAutoSearch,
+  getConfirmFunc,
+  getErrorFunc,
+  getLoadingFunc,
+  getLocaleFunc,
+  getMsgFunc,
+  getResource,
+  getUIService,
+  hideLoading,
+  LoadingService,
+  showLoading,
+} from "./input"
 import { build as build2 } from "./metadata"
-import { clone, equalAll, makeDiff, setAll, setValue } from "./reflect"
+import { clone, equalAll, makeDiff, setAll } from "./reflect"
 import {
   addParametersIntoUrl,
   buildMessage,
@@ -72,18 +86,6 @@ export class RootComponent {
   }
 }
 
-export interface ViewParameter {
-  resource: ResourceService
-  showError: (m: string, callback?: () => void, header?: string) => void
-  getLocale?: (profile?: string) => Locale
-  loading?: LoadingService
-}
-export interface ViewService<T, ID> {
-  metadata?(): Attributes | undefined
-  keys?(): string[]
-  load(id: ID, ctx?: any): Promise<T | null>
-}
-
 export function getModelName(form?: HTMLFormElement): string {
   if (form) {
     const a = form.getAttribute("model-name")
@@ -113,188 +115,11 @@ export function build(attributes: Attributes, ignoreDate?: boolean, name?: strin
   }
 }
 
-export interface ActivatedRoute {
-  /** An observable of the matrix parameters scoped to this route. */
-  params: any
-}
-export class BaseViewComponent<T, ID> extends RootComponent {
-  constructor(
-    sv: ((id: ID, ctx?: any) => Promise<T>) | ViewService<T, ID>,
-    param: ResourceService | ViewParameter,
-    showError?: (m: string, callback?: () => void, header?: string) => void,
-    getLocale?: (profile?: string) => Locale,
-    loading?: LoadingService,
-    ignoreDate?: boolean,
-  ) {
-    super(getResource(param), getLocaleFunc(param, getLocale))
-    this.showError = getErrorFunc(param, showError)
-    this.loading = getLoadingFunc(param, loading)
-    if (sv) {
-      if (typeof sv === "function") {
-        this.loadData = sv
-      } else {
-        this.loadData = sv.load
-        if (sv.metadata) {
-          const m = sv.metadata()
-          if (m) {
-            // this.metadata = m;
-            const meta = build(m, ignoreDate)
-            this.keys = meta.keys
-          }
-        }
-      }
-    }
-    this.getModelName = this.getModelName.bind(this)
-    const n = this.getModelName()
-    ;(this as any)[n] = {} as any
-    this.load = this.load.bind(this)
-    this.showModel = this.showModel.bind(this)
-    this.getModel = this.getModel.bind(this)
-    this.handleNotFound = this.handleNotFound.bind(this)
-  }
-  protected name?: string
-  protected loading?: LoadingService
-  protected showError: (m: string, callback?: () => void, header?: string) => void
-  protected loadData?: (id: ID, ctx?: any) => Promise<T | null | undefined>
-  // protected service?: ViewService<T, ID>;
-  protected keys?: string[]
-  // protected metadata?: Attributes;
-
-  load(_id: ID, callback?: (m: T, showF: (model: T) => void) => void) {
-    const id: any = _id
-    if (id && id !== "") {
-      this.running = true
-      showLoading(this.loading)
-      const com = this
-      if (this.loadData) {
-        this.loadData(id)
-          .then((obj) => {
-            if (obj) {
-              if (callback) {
-                callback(obj, com.showModel)
-              } else {
-                com.showModel(obj)
-              }
-            } else {
-              com.handleNotFound(com.form)
-            }
-            com.running = false
-            hideLoading(com.loading)
-          })
-          .catch((err) => {
-            const data = err && err.response ? err.response : err
-            if (data && data.status === 404) {
-              com.handleNotFound(com.form)
-            } else {
-              error(err, com.resourceService.value, com.showError)
-            }
-            com.running = false
-            hideLoading(com.loading)
-          })
-      }
-    }
-  }
-  protected handleNotFound(form?: HTMLFormElement): void {
-    if (form) {
-      setReadOnly(form)
-    }
-    const msg = message(this.resourceService.value, "error_not_found", "error")
-    this.showError(msg.message)
-  }
-  protected getModelName(): string {
-    if (this.name && this.name.length > 0) {
-      return this.name
-    }
-    const n = getModelName(this.form)
-    if (n && n.length > 0) {
-      return n
-    } else {
-      return "model"
-    }
-  }
-  protected showModel(model: T): void {
-    const name = this.getModelName()
-    ;(this as any)[name] = model
-  }
-  getModel(): T {
-    const name = this.getModelName()
-    const model = (this as any)[name]
-    return model
-  }
-}
-
-export function getId<ID>(route: ActivatedRoute, keys?: string[], id?: ID): ID | null {
-  if (id) {
-    return id
-  } else {
-    return buildId(route, keys)
-  }
-}
-export function buildId<ID>(route: ActivatedRoute, keys?: string[]): ID | null {
-  if (!route) {
-    return null
-  }
-  const param: any = route.params
-  const obj = param._value
-  if (!keys || keys.length === 0) {
-    return obj["id"]
-  }
-  if (!(keys && keys.length > 0)) {
-    return null
-  }
-  if (keys.length === 1) {
-    const x = obj[keys[0]]
-    if (x && x !== "") {
-      return x
-    }
-    return obj["id"]
-  }
-  const id: any = {}
-  for (const key of keys) {
-    const v = obj[key]
-    if (!v) {
-      return null
-    }
-    id[key] = v
-  }
-  return id
-}
-export class ViewComponent<T, ID> extends BaseViewComponent<T, ID> {
-  constructor(
-    protected viewContainerRef: ViewContainerRef,
-    protected route: ActivatedRoute,
-    sv: ((id: ID, ctx?: any) => Promise<T>) | ViewService<T, ID>,
-    param: ResourceService | ViewParameter,
-    showError?: (m: string, callback?: () => void, header?: string) => void,
-    getLocale?: (profile?: string) => Locale,
-    loading?: LoadingService,
-  ) {
-    super(sv, param, showError, getLocale, loading)
-    this.onInit = this.onInit.bind(this)
-  }
-  onInit() {
-    this.form = initElement(this.viewContainerRef)
-    const id: ID | null = buildId<ID>(this.route, this.keys)
-    if (id) {
-      this.load(id)
-    }
-  }
-}
-interface BaseUIService {
-  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string | number | boolean | null | undefined
-  removeError(el: HTMLInputElement): void
-}
 export class BaseComponent extends RootComponent {
-  constructor(resourceService: ResourceService, getLocale?: (profile?: string) => Locale, ui?: BaseUIService, protected loading?: LoadingService) {
+  constructor(resourceService: ResourceService, getLocale?: (profile?: string) => Locale, protected loading?: LoadingService) {
     super(resourceService, getLocale)
-    this.uiS1 = ui
-
     this.getModelName = this.getModelName.bind(this)
-    this.includes = this.includes.bind(this)
-    this.updateState = this.updateState.bind(this)
-    this.updateStateFlat = this.updateStateFlat.bind(this)
   }
-  private uiS1?: BaseUIService
   /*
   protected init() {
     try {
@@ -321,52 +146,6 @@ export class BaseComponent extends RootComponent {
     }
     // return 'state';
   }
-  includes(checkedList: Array<string> | string, v: string): boolean {
-    return v && checkedList && Array.isArray(checkedList) ? checkedList.includes(v) : false
-  }
-  updateState(event: Event) {
-    let locale: Locale = enLocale
-    if (this.getLocale) {
-      locale = this.getLocale()
-    }
-    this.updateStateFlat(event, locale)
-  }
-  updateStateFlat(e: Event, locale?: Locale) {
-    if (!locale) {
-      locale = enLocale
-    }
-    const ctrl = e.currentTarget as HTMLInputElement
-    let modelName: string | null = this.getModelName()
-    if (!modelName && ctrl.form) {
-      modelName = ctrl.form.getAttribute("model-name")
-    }
-    const type = ctrl.getAttribute("type")
-    const isPreventDefault = type && (["checkbox", "radio"].indexOf(type.toLowerCase()) >= 0 ? false : true)
-    if (isPreventDefault) {
-      e.preventDefault()
-    }
-    if (this.uiS1 && ctrl.nodeName === "SELECT" && ctrl.value && ctrl.classList.contains("invalid")) {
-      this.uiS1.removeError(ctrl)
-    }
-    if (modelName) {
-      const ex = (this as any)[modelName]
-      const dataField = ctrl.getAttribute("data-field")
-      const field = dataField ? dataField : ctrl.name
-      if (type && type.toLowerCase() === "checkbox") {
-        const v = valueOfCheckbox(ctrl)
-        setValue(ex, field, v)
-      } else {
-        let v = ctrl.value
-        if (this.uiS1) {
-          v = this.uiS1.getValue(ctrl, locale) as string
-        }
-        // tslint:disable-next-line:triple-equals
-        if (ctrl.value != v) {
-          setValue(ex, field, v)
-        }
-      }
-    }
-  }
 }
 export function valueOfCheckbox(ctrl: HTMLInputElement): string | number | boolean {
   const ctrlOnValue = ctrl.getAttribute("data-on-value")
@@ -379,9 +158,8 @@ export function valueOfCheckbox(ctrl: HTMLInputElement): string | number | boole
     return ctrl.checked === true
   }
 }
-export class MessageComponent extends BaseComponent {
-  constructor(resourceService: ResourceService, getLocale?: (profile?: string) => Locale, loading?: LoadingService, ui?: UIService) {
-    super(resourceService, getLocale, ui, loading)
+export class MessageComponent {
+  constructor() {
     this.showMessage = this.showMessage.bind(this)
     this.showError = this.showError.bind(this)
     this.hideMessage = this.hideMessage.bind(this)
@@ -447,7 +225,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     ignoreDate?: boolean,
     backOnSaveSuccess?: boolean,
   ) {
-    super(getResource(param), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading))
+    super(getResource(param), getLocaleFunc(param, getLocale), getLoadingFunc(param, loading))
     this.ui = getUIService(param, uis)
     this.showError = getErrorFunc(param, showError)
     this.showMessage = getMsgFunc(param, showMessage)
@@ -561,7 +339,8 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
           if (data && data.status === 404) {
             com.handleNotFound(com.form)
           } else {
-            error(err, com.resourceService.value, com.showError)
+            const resource = this.resourceService.resource()
+            error(err, resource, com.showError)
           }
           com.running = false
           hideLoading(com.loading)
@@ -584,11 +363,11 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.showModel(model)
   }
   protected handleNotFound(form?: HTMLFormElement): void {
-    const msg = message(this.resourceService.value, "error_not_found", "error")
     if (this.form) {
       setReadOnly(form)
     }
-    this.showError(msg.message)
+    const resource = this.resourceService.resource()
+    this.showError(resource.error_not_found, undefined, resource.error)
   }
   protected formatModel(obj: T): void {
     if (this.metamodel) {
@@ -678,36 +457,35 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     }
     const com = this
     const obj = com.getModel()
+    const resource = this.resourceService.resource()
     if (!this.newMode) {
       const diffObj = makeDiff(this.orginalModel, obj, this.keys, this.version)
       const l = Object.keys(diffObj as any).length
       if (l === 0) {
-        this.showMessage(r.value("msg_no_change"))
+        this.showMessage(resource.msg_no_change)
       } else {
         com.validate(obj, () => {
-          const msg = message(r.value, "msg_confirm_save", "confirm", "yes", "no")
           this.confirm(
-            msg.message,
+            resource.msg_confirm_save,
             () => {
               com.doSave(obj, diffObj, isBack)
             },
-            msg.title,
-            msg.no,
-            msg.yes,
+            resource.confirm,
+            resource.no,
+            resource.yes,
           )
         })
       }
     } else {
       com.validate(obj, () => {
-        const msg = message(r.value, "msg_confirm_save", "confirm", "yes", "no")
         this.confirm(
-          msg.message,
+          resource.msg_confirm_save,
           () => {
             com.doSave(obj, obj, isBack)
           },
-          msg.title,
-          msg.no,
-          msg.yes,
+          resource.confirm,
+          resource.no,
+          resource.yes,
         )
       })
     }
@@ -746,7 +524,8 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         hideLoading(com.loading)
       })
       .then((err) => {
-        error(err, com.resourceService.value, com.showError)
+        const resource = this.resourceService.resource()
+        error(err, resource, com.showError)
         com.running = false
         hideLoading(com.loading)
       })
@@ -831,8 +610,8 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     }
   }
   protected handleDuplicateKey(result?: T): void {
-    const msg = message(this.resourceService.value, "error_duplicate_key", "error")
-    this.showError(msg.message)
+    const resource = this.resourceService.resource()
+    this.showError(resource.error_duplicate_key, undefined, resource.error)
   }
 }
 export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
@@ -1007,7 +786,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     uis?: UIService,
     loading?: LoadingService,
   ) {
-    super(getResource(param), getLocaleFunc(param, getLocale), getUIService(param, uis), getLoadingFunc(param, loading))
+    super(getResource(param), getLocaleFunc(param, getLocale), getLoadingFunc(param, loading))
     this.filter = {} as any
 
     if (sv) {
@@ -1155,11 +934,6 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       locale = enLocale
     }
     let obj = this.filter
-    const sf = this.getSearchForm()
-    if (this.ui && sf) {
-      const obj2 = this.ui.decodeFromForm(sf, locale, this.getCurrencyCode())
-      obj = obj2 ? obj2 : {}
-    }
     const obj3 = optimizeFilter(obj, this, this.getFields())
     /*
     if (this.excluding) {
@@ -1274,7 +1048,8 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
           hideLoading(com.loading)
         })
         .catch((err) => {
-          error(err, com.resourceService.value, com.showError)
+          const resource = this.resourceService.resource()
+          error(err, resource, com.showError)
           com.running = false
           hideLoading(com.loading)
         })
@@ -1300,7 +1075,8 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     if (this.tmpPage) {
       this.page = this.tmpPage
     }
-    error(response, this.resourceService.value, this.showError)
+    const resource = this.resourceService.resource()
+    error(response, resource, this.showError)
   }
   showResults(s: S, sr: SearchResult<T>): void {
     const com = this
@@ -1418,212 +1194,5 @@ export class SearchComponent<T, S extends Filter> extends BaseSearchComponent<T,
     this.form = initElement(this.viewContainerRef, fi)
     const s = this.mergeFilter(buildFromUrl<S>())
     this.load(s, this.autoSearch)
-  }
-}
-
-export interface DiffParameter {
-  resource: ResourceService
-  showMessage: (msg: string, option?: string) => void
-  showError: (m: string, callback?: () => void, header?: string) => void
-  loading?: LoadingService
-  // status?: DiffStatusConfig;
-}
-export interface DiffService<T, ID> {
-  keys(): string[]
-  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>>
-}
-export interface ApprService<ID> {
-  approve(id: ID, ctx?: any): Promise<number | string>
-  reject(id: ID, ctx?: any): Promise<number | string>
-}
-export interface DiffApprService<T, ID> extends DiffService<T, ID>, ApprService<ID> {}
-export class BaseDiffApprComponent<T, ID> {
-  constructor(
-    protected service: DiffApprService<T, ID>,
-    param: ResourceService | DiffParameter,
-    showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, callback?: () => void, header?: string) => void,
-    loading?: LoadingService,
-  ) {
-    this.resourceService = getResource(param)
-    this.resource = this.resourceService.resource()
-    this.loading = getLoadingFunc(param, loading)
-    this.showError = getErrorFunc(param, showError)
-    this.showMessage = getMsgFunc(param, showMessage)
-    /*
-    this.status = getDiffStatusFunc(param, status);
-    if (!this.status) {
-      this.status = createDiffStatus(this.status);
-    }
-    */
-    this.back = this.back.bind(this)
-    const x: any = {}
-    this.origin = x
-    this.value = x
-    this.approve = this.approve.bind(this)
-    this.reject = this.reject.bind(this)
-    this.handleError = this.handleError.bind(this)
-    this.end = this.end.bind(this)
-    this.formatFields = this.formatFields.bind(this)
-    this.load = this.load.bind(this)
-    this.handleNotFound = this.handleNotFound.bind(this)
-  }
-  // protected status: DiffStatusConfig;
-  protected showMessage: (msg: string, option?: string) => void
-  protected showError: (m: string, callback?: () => void, header?: string) => void
-  protected resourceService: ResourceService
-  protected loading?: LoadingService
-  resource: StringMap
-  protected running?: boolean
-  protected form?: HTMLFormElement
-  protected id?: ID
-  origin?: T
-  value: T
-  disabled?: boolean
-
-  back(): void {
-    window.history.back()
-  }
-
-  load(_id: ID) {
-    const x: any = _id
-    if (x && x !== "") {
-      this.id = _id
-      this.running = true
-      showLoading(this.loading)
-      const com = this
-      this.service
-        .diff(_id)
-        .then((dobj) => {
-          if (!dobj) {
-            com.handleNotFound(com.form)
-          } else {
-            const formatdDiff = formatDiffModel(dobj, com.formatFields)
-            com.value = formatdDiff.value
-            com.origin = formatdDiff.origin
-            if (com.form) {
-              showDiff(com.form, formatdDiff.value, formatdDiff.origin)
-            }
-          }
-          com.running = false
-          hideLoading(com.loading)
-        })
-        .catch((err) => {
-          const data = err && err.response ? err.response : err
-          if (data && data.status === 404) {
-            com.handleNotFound(com.form)
-          } else {
-            error(err, com.resourceService.resource(), com.showError)
-          }
-          com.running = false
-          hideLoading(com.loading)
-        })
-    }
-  }
-  protected handleNotFound(form?: HTMLFormElement) {
-    this.disabled = true
-    const r = this.resourceService.resource()
-    this.showError(r["error_not_found"])
-  }
-
-  formatFields(value: T): T {
-    return value
-  }
-  approve(event: Event) {
-    event.preventDefault()
-    if (this.running) {
-      return
-    }
-    const com = this
-    // const st = this.status;
-    const r = this.resourceService.resource()
-    if (this.id) {
-      this.running = true
-      showLoading(this.loading)
-      this.service
-        .approve(this.id)
-        .then((status) => {
-          if (typeof status === "number" && status > 0) {
-            com.showMessage(r["msg_approve_success"])
-          } else if (status === 0) {
-            com.handleNotFound(com.form)
-          } else {
-            com.showMessage(r["msg_approve_version_error"])
-          }
-          com.end()
-        })
-        .catch((err) => {
-          com.handleError(err)
-          com.end()
-        })
-    }
-  }
-  reject(event: Event) {
-    event.preventDefault()
-    if (this.running) {
-      return
-    }
-    const com = this
-    // const st = this.status;
-    const r = this.resourceService.resource()
-    if (this.id) {
-      this.running = true
-      showLoading(this.loading)
-      this.service
-        .reject(this.id)
-        .then((status) => {
-          if (typeof status === "number" && status > 0) {
-            com.showMessage(r["msg_reject_success"])
-          } else if (status === 0) {
-            com.handleNotFound(com.form)
-          } else {
-            com.showMessage(r["msg_approve_version_error"])
-          }
-          com.end()
-        })
-        .catch((err) => {
-          com.handleError(err)
-          com.end()
-        })
-    }
-  }
-  protected handleError(err: any): void {
-    const r = this.resourceService.resource()
-    const data = err && err.response ? err.response : err
-    if (data && (data.status === 404 || data.status === 409)) {
-      if (data.status === 404) {
-        this.handleNotFound()
-      } else {
-        this.showMessage(r["msg_approve_version_error"])
-      }
-    } else {
-      error(err, r, this.showError)
-    }
-  }
-  protected end() {
-    this.disabled = true
-    this.running = false
-    hideLoading(this.loading)
-  }
-}
-export class DiffApprComponent<T, ID> extends BaseDiffApprComponent<T, ID> {
-  constructor(
-    protected viewContainerRef: ViewContainerRef,
-    protected route: ActivatedRoute,
-    service: DiffApprService<T, ID>,
-    param: ResourceService | DiffParameter,
-    showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, callback?: () => void, header?: string) => void,
-    loading?: LoadingService,
-  ) {
-    super(service, param, showMessage, showError, loading)
-    this.onInit = this.onInit.bind(this)
-  }
-  onInit() {
-    this.form = initElement(this.viewContainerRef)
-    const id: ID | null = buildId<ID>(this.route, this.service.keys())
-    if (id) {
-      this.load(id)
-    }
   }
 }
