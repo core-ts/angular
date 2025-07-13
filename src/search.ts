@@ -12,7 +12,7 @@ export interface Filter {
 export interface SearchResult<T> {
   total?: number
   list: T[]
-  nextPageToken?: string
+  next?: string
   last?: boolean
 }
 export interface SearchService<T, S extends Filter> {

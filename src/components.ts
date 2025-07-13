@@ -1,9 +1,9 @@
 import { ViewContainerRef } from "@angular/core"
 import { ActivatedRoute } from "@angular/router"
 import { buildFromUrl, initElement } from "./angular"
-import { Attributes, ErrorMessage, Locale, MetaModel, resources, ResourceService, StringMap, UIService } from "./core"
+import { error } from "./common"
+import { Attributes, ErrorMessage, LoadingService, Locale, MetaModel, resources, ResourceService, StringMap, UIService } from "./core"
 import { createModel } from "./edit"
-import { error } from "./error"
 import { format, json } from "./formatter"
 import { focusFirstError, setReadOnly } from "./formutil"
 import {
@@ -17,7 +17,6 @@ import {
   getResource,
   getUIService,
   hideLoading,
-  LoadingService,
   showLoading,
 } from "./input"
 import { build as build2 } from "./metadata"
@@ -1095,8 +1094,8 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       if ((!s.page || s.page <= 1) && s.firstLimit && s.firstLimit > 0) {
         limit = s.firstLimit
       }
-      com.nextPageToken = sr.nextPageToken
-      handleAppend(com, sr.list, limit, sr.nextPageToken)
+      com.nextPageToken = sr.next
+      handleAppend(com, sr.list, limit, sr.next)
       if (this.append && s.page && s.page > 1) {
         append(this.getList(), results)
       } else {

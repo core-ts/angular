@@ -1,9 +1,9 @@
 import { ViewContainerRef } from "@angular/core"
 import { ActivatedRoute } from "@angular/router"
 import { initElement } from "./angular"
-import { ResourceService, StringMap } from "./core"
-import { error } from "./error"
-import { buildId, getErrorFunc, getLoadingFunc, getMsgFunc, getResource, hideLoading, LoadingService, showLoading } from "./input"
+import { error } from "./common"
+import { LoadingService, ResourceService, StringMap } from "./core"
+import { buildId, getErrorFunc, getLoadingFunc, getMsgFunc, getResource, hideLoading, showLoading } from "./input"
 import { clone, diff } from "./reflect"
 
 export function showDiff<T>(form: HTMLFormElement, value: T, origin?: T): void {

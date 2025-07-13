@@ -14,7 +14,7 @@ export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600]
 export const sizes = pageSizes
 // tslint:disable-next-line:class-name
 export class resources {
-  private static phone = / |-|\.|\(|\)/g
+  static phone = / |-|\.|\(|\)/g
   static _cache: any = {}
   static cache = true
   static fields = "fields"
@@ -108,12 +108,8 @@ export type Type =
 
 export type Format = "currency" | "percentage" | "email" | "url" | "phone" | "fax" | "ipv4" | "ipv6"
 
-export interface Attributes {
-  [key: string]: Attribute
-}
 export interface Attribute {
   name?: string
-  field?: string
   type?: Type
   format?: Format
   key?: boolean
@@ -123,6 +119,10 @@ export interface Attribute {
   scale?: number
   noformat?: boolean
 }
+export interface Attributes {
+  [key: string]: Attribute
+}
+
 export interface MetaModel {
   attributes: Attributes
   attributeName?: string
