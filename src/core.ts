@@ -73,8 +73,6 @@ export interface ErrorMessage {
   message?: string
 }
 export interface UIService {
-  getValue(el: HTMLInputElement, locale?: Locale, currencyCode?: string): string | number | boolean | null | undefined
-
   validateForm(form?: HTMLFormElement, locale?: Locale, focusFirst?: boolean, scroll?: boolean): boolean
   removeFormError(form: HTMLFormElement): void
   removeError(el: HTMLInputElement): void
