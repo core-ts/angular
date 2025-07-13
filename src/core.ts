@@ -14,7 +14,7 @@ export const pageSizes = [12, 24, 60, 100, 120, 180, 300, 600]
 export const sizes = pageSizes
 // tslint:disable-next-line:class-name
 export class resources {
-  static phone = / |-|\.|\(|\)/g
+  static phone = / |\-|\.|\(|\)/g
   static _cache: any = {}
   static cache = true
   static fields = "fields"
