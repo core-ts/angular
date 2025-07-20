@@ -66,6 +66,15 @@ export function diff(obj1: any, obj2: any): string[] {
   }
   return fields
 }
+export function notIn(s1: string[], s2: string[]): string[] {
+  const r: string[] = []
+  for (const s of s2) {
+    if (s1.indexOf(s) < 0) {
+      r.push(s)
+    }
+  }
+  return r
+}
 
 export function makeDiff<T>(o1: T, o2: T, keys?: string[], version?: string): Partial<T> {
   const obj1: any = o1
@@ -101,16 +110,6 @@ export function isEmptyObject(obj: any): boolean {
     }
   }
   return true
-}
-
-export function notIn(s1: string[], s2: string[]): string[] {
-  const r: string[] = []
-  for (const s of s2) {
-    if (s1.indexOf(s) < 0) {
-      r.push(s)
-    }
-  }
-  return r
 }
 
 export function equal(obj1: any, obj2: any): boolean {
@@ -172,24 +171,6 @@ export function equalArrays<T>(ar1: T[], ar2: T[]): boolean {
     const e = equal(ar1[i], ar2[i])
     if (e === false) {
       return false
-    }
-  }
-  return true
-}
-
-export function setAll<T>(list: T[] | undefined | null, name: string, v: boolean | string | number): void {
-  if (list) {
-    for (const obj of list) {
-      ;(obj as any)[name] = v
-    }
-  }
-}
-export function equalAll<T>(list: T[] | undefined | null, name: string, v: boolean | string | number): boolean {
-  if (list) {
-    for (const obj of list) {
-      if ((obj as any)[name] !== v) {
-        return false
-      }
     }
   }
   return true

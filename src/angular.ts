@@ -1,14 +1,35 @@
 import { HttpClient, HttpParams } from "@angular/common/http"
 import { ViewContainerRef } from "@angular/core"
+import { Router } from "@angular/router"
 import { lastValueFrom } from "rxjs"
-import { Headers, StringMap } from "./core"
-import { hasDiff } from "./reflect"
+import { Headers } from "./core"
 
-export function back<T>(confirm: (msg: string, yesCallback?: () => void) => void, resource: StringMap, o1: T, o2: T, keys?: string[], version?: string) {
-  if (!hasDiff(o1, o2, keys, version)) {
-    window.history.back()
+export interface DataMap<V> {
+  [key: string]: V
+}
+export function isAuthorized<T, V>(ur: T, router?: Router, to?: string, url?: string, m?: Map<string, V>, home?: string) {
+  if (!ur) {
+    if (to && to.length > 0 && router) {
+      router.navigate([to])
+    }
+    return false
   } else {
-    confirm(resource.msg_confirm_back, () => window.history.back())
+    if (!m) {
+      return true
+    } else {
+      if (!url) {
+        return true
+      }
+      const p = m.get(url)
+      if (p) {
+        return true
+      } else {
+        if (router && home && home.length > 0) {
+          router.navigate([home])
+        }
+        return false
+      }
+    }
   }
 }
 

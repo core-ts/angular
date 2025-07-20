@@ -2,7 +2,7 @@ import { ViewContainerRef } from "@angular/core"
 import { buildFromUrl, initElement } from "./angular"
 import { enLocale, error, hideLoading, showLoading } from "./common"
 import { LoadingService, Locale, StringMap, UIService } from "./core"
-import { clone, equalAll, setAll } from "./reflect"
+import { clone } from "./reflect"
 import {
   addParametersIntoUrl,
   buildMessage,
@@ -19,6 +19,24 @@ import {
   SearchService,
   showPaging,
 } from "./search"
+
+export function setAll<T>(list: T[] | undefined | null, name: string, v: boolean | string | number): void {
+  if (list) {
+    for (const obj of list) {
+      ;(obj as any)[name] = v
+    }
+  }
+}
+export function equalAll<T>(list: T[] | undefined | null, name: string, v: boolean | string | number): boolean {
+  if (list) {
+    for (const obj of list) {
+      if ((obj as any)[name] !== v) {
+        return false
+      }
+    }
+  }
+  return true
+}
 
 export interface SearchParameter {
   showMessage: (msg: string, option?: string) => void
