@@ -62,11 +62,14 @@ export * from "./core"
 export * from "./edit"
 export * from "./formutil"
 
-export * from "./components"
-export * from "./diff"
-export * from "./formatter"
 export * from "./reflect"
 export * from "./search"
+
+export * from "./diff"
+export * from "./edit-component"
+export * from "./formatter"
+export * from "./message"
+export * from "./search-component"
 
 export const scrollToFocus = (e: any, isUseTimeOut?: boolean) => {
   try {

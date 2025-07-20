@@ -46,6 +46,19 @@ export function hideLoading(loading?: LoadingService | (() => void)): void {
   }
 }
 
+export const enLocale = {
+  id: "en-US",
+  countryCode: "US",
+  dateFormat: "M/d/yyyy",
+  firstDayOfWeek: 1,
+  decimalSeparator: ".",
+  groupSeparator: ",",
+  decimalDigits: 2,
+  currencyCode: "USD",
+  currencySymbol: "$",
+  currencyPattern: 0,
+}
+
 export interface ActivatedRoute {
   /** An observable of the matrix parameters scoped to this route. */
   params: any
