@@ -1,9 +1,8 @@
 import { ViewContainerRef } from "@angular/core"
 import { ActivatedRoute } from "@angular/router"
 import { initElement } from "./angular"
-import { error } from "./common"
-import { LoadingService, ResourceService, StringMap } from "./core"
-import { buildId, getErrorFunc, getLoadingFunc, getMsgFunc, getResource, hideLoading, showLoading } from "./input"
+import { buildId, error, hideLoading, showLoading } from "./common"
+import { LoadingService, StringMap } from "./core"
 import { clone, diff } from "./reflect"
 
 export function showDiff<T>(form: HTMLFormElement, value: T, origin?: T): void {
@@ -57,11 +56,9 @@ export function formatDiffModel<T, ID>(obj: DiffModel<T, ID>, formatFields?: (ob
   return obj2
 }
 export interface DiffParameter {
-  resource: ResourceService
   showMessage: (msg: string, option?: string) => void
   showError: (m: string, callback?: () => void, header?: string) => void
   loading?: LoadingService
-  // status?: DiffStatusConfig;
 }
 export interface DiffService<T, ID> {
   keys(): string[]
@@ -77,22 +74,11 @@ export class DiffApprComponent<T, ID> {
     protected viewContainerRef: ViewContainerRef,
     protected route: ActivatedRoute,
     protected service: DiffApprService<T, ID>,
-    param: ResourceService | DiffParameter,
-    showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, callback?: () => void, header?: string) => void,
-    loading?: LoadingService,
+    public resource: StringMap,
+    protected showMessage: (msg: string, option?: string) => void,
+    protected showError: (m: string, callback?: () => void, header?: string) => void,
+    protected loading?: LoadingService,
   ) {
-    this.resourceService = getResource(param)
-    this.resource = this.resourceService.resource()
-    this.loading = getLoadingFunc(param, loading)
-    this.showError = getErrorFunc(param, showError)
-    this.showMessage = getMsgFunc(param, showMessage)
-    /*
-    this.status = getDiffStatusFunc(param, status);
-    if (!this.status) {
-      this.status = createDiffStatus(this.status);
-    }
-    */
     this.back = this.back.bind(this)
     const x: any = {}
     this.origin = x
@@ -105,12 +91,6 @@ export class DiffApprComponent<T, ID> {
     this.load = this.load.bind(this)
     this.handleNotFound = this.handleNotFound.bind(this)
   }
-  // protected status: DiffStatusConfig;
-  protected showMessage: (msg: string, option?: string) => void
-  protected showError: (m: string, callback?: () => void, header?: string) => void
-  protected resourceService: ResourceService
-  protected loading?: LoadingService
-  resource: StringMap
   protected running?: boolean
   protected form?: HTMLFormElement
   protected id?: ID
@@ -157,7 +137,7 @@ export class DiffApprComponent<T, ID> {
           if (data && data.status === 404) {
             com.handleNotFound(com.form)
           } else {
-            error(err, com.resourceService.resource(), com.showError)
+            error(err, this.resource, com.showError)
           }
           com.running = false
           hideLoading(com.loading)
@@ -166,8 +146,7 @@ export class DiffApprComponent<T, ID> {
   }
   protected handleNotFound(form?: HTMLFormElement) {
     this.disabled = true
-    const r = this.resourceService.resource()
-    this.showError(r["error_not_found"])
+    this.showError(this.resource.error_not_found)
   }
 
   formatFields(value: T): T {
@@ -179,8 +158,6 @@ export class DiffApprComponent<T, ID> {
       return
     }
     const com = this
-    // const st = this.status;
-    const r = this.resourceService.resource()
     if (this.id) {
       this.running = true
       showLoading(this.loading)
@@ -188,11 +165,11 @@ export class DiffApprComponent<T, ID> {
         .approve(this.id)
         .then((status) => {
           if (typeof status === "number" && status > 0) {
-            com.showMessage(r["msg_approve_success"])
+            com.showMessage(this.resource.msg_approve_success)
           } else if (status === 0) {
             com.handleNotFound(com.form)
           } else {
-            com.showMessage(r["msg_approve_version_error"])
+            com.showMessage(this.resource.msg_approve_version_error)
           }
           com.end()
         })
@@ -208,8 +185,6 @@ export class DiffApprComponent<T, ID> {
       return
     }
     const com = this
-    // const st = this.status;
-    const r = this.resourceService.resource()
     if (this.id) {
       this.running = true
       showLoading(this.loading)
@@ -217,11 +192,11 @@ export class DiffApprComponent<T, ID> {
         .reject(this.id)
         .then((status) => {
           if (typeof status === "number" && status > 0) {
-            com.showMessage(r["msg_reject_success"])
+            com.showMessage(this.resource.msg_reject_success)
           } else if (status === 0) {
             com.handleNotFound(com.form)
           } else {
-            com.showMessage(r["msg_approve_version_error"])
+            com.showMessage(this.resource.msg_approve_version_error)
           }
           com.end()
         })
@@ -232,16 +207,15 @@ export class DiffApprComponent<T, ID> {
     }
   }
   protected handleError(err: any): void {
-    const r = this.resourceService.resource()
     const data = err && err.response ? err.response : err
     if (data && (data.status === 404 || data.status === 409)) {
       if (data.status === 404) {
         this.handleNotFound()
       } else {
-        this.showMessage(r["msg_approve_version_error"])
+        this.showMessage(this.resource.msg_approve_version_error)
       }
     } else {
-      error(err, r, this.showError)
+      error(err, this.resource, this.showError)
     }
   }
   protected end() {

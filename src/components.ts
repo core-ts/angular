@@ -1,24 +1,11 @@
 import { ViewContainerRef } from "@angular/core"
 import { ActivatedRoute } from "@angular/router"
 import { buildFromUrl, initElement } from "./angular"
-import { error } from "./common"
-import { Attributes, ErrorMessage, LoadingService, Locale, MetaModel, resources, ResourceService, StringMap, UIService } from "./core"
+import { buildId, error, hideLoading, showLoading } from "./common"
+import { Attributes, ErrorMessage, LoadingService, Locale, MetaModel, resources, StringMap, UIService } from "./core"
 import { createModel } from "./edit"
 import { format, json } from "./formatter"
 import { focusFirstError, setReadOnly } from "./formutil"
-import {
-  buildId,
-  getAutoSearch,
-  getConfirmFunc,
-  getErrorFunc,
-  getLoadingFunc,
-  getLocaleFunc,
-  getMsgFunc,
-  getResource,
-  getUIService,
-  hideLoading,
-  showLoading,
-} from "./input"
 import { build as build2 } from "./metadata"
 import { clone, equalAll, makeDiff, setAll } from "./reflect"
 import {
@@ -50,40 +37,6 @@ export const enLocale = {
   currencySymbol: "$",
   currencyPattern: 0,
 }
-export class RootComponent {
-  constructor(protected resourceService: ResourceService, protected getLocale?: (profile?: string) => Locale) {
-    if (resourceService) {
-      this.resource = resourceService.resource()
-    } else {
-      this.resource = {} as any
-    }
-    this.currencySymbol = this.currencySymbol.bind(this)
-    this.getCurrencyCode = this.getCurrencyCode.bind(this)
-    this.back = this.back.bind(this)
-  }
-  resource: StringMap
-  protected includeCurrencySymbol?: boolean
-  protected running?: boolean
-  protected form?: HTMLFormElement
-
-  back(): void {
-    window.history.back()
-  }
-
-  currencySymbol(): boolean | undefined {
-    return this.includeCurrencySymbol
-  }
-
-  getCurrencyCode(): string | undefined {
-    if (this.form) {
-      const x = this.form.getAttribute("currency-code")
-      if (x) {
-        return x
-      }
-    }
-    return undefined
-  }
-}
 
 export function getModelName(form?: HTMLFormElement): string {
   if (form) {
@@ -114,38 +67,6 @@ export function build(attributes: Attributes, ignoreDate?: boolean, name?: strin
   }
 }
 
-export class BaseComponent extends RootComponent {
-  constructor(resourceService: ResourceService, getLocale?: (profile?: string) => Locale, protected loading?: LoadingService) {
-    super(resourceService, getLocale)
-    this.getModelName = this.getModelName.bind(this)
-  }
-  /*
-  protected init() {
-    try {
-      this.loadData();
-    } catch (err) {
-      this.handleError(err);
-    }
-  }
-
-  refresh() {
-    try {
-      this.loadData();
-    } catch (err) {
-      this.handleError(err);
-    }
-  }
-  */
-  protected getModelName(): string {
-    const n = getModelName(this.form)
-    if (!n || n.length === 0) {
-      return "model"
-    } else {
-      return n
-    }
-    // return 'state';
-  }
-}
 export function valueOfCheckbox(ctrl: HTMLInputElement): string | number | boolean {
   const ctrlOnValue = ctrl.getAttribute("data-on-value")
   const ctrlOffValue = ctrl.getAttribute("data-off-value")
@@ -181,14 +102,12 @@ export class MessageComponent {
 }
 
 export interface EditParameter {
-  resource: ResourceService
   showMessage: (msg: string, option?: string) => void
   showError: (m: string, callback?: () => void, header?: string) => void
   confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
   ui?: UIService
   getLocale?: (profile?: string) => Locale
   loading?: LoadingService
-  // status?: EditStatusConfig;
 }
 export interface GenericService<T, ID, R> {
   metadata?(): Attributes | undefined
@@ -209,26 +128,27 @@ export function handleVersion<T>(obj: T, version?: string): void {
     }
   }
 }
-export class BaseEditComponent<T, ID> extends BaseComponent {
+export class BaseEditComponent<T, ID> {
   constructor(
     protected service: GenericService<T, ID, number | number | T | ErrorMessage[]>,
-    param: ResourceService | EditParameter,
-    showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, callback?: () => void, header?: string) => void,
-    confirm?: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
-    getLocale?: (profile?: string) => Locale,
-    uis?: UIService,
-    loading?: LoadingService,
+    public resource: StringMap,
+    protected showMessage: (msg: string, option?: string) => void,
+    protected showError: (m: string, callback?: () => void, header?: string) => void,
+    protected confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
+    protected getLocale?: (profile?: string) => Locale,
+    protected ui?: UIService,
+    protected loading?: LoadingService,
     // status?: EditStatusConfig,
     patchable?: boolean,
     ignoreDate?: boolean,
     backOnSaveSuccess?: boolean,
   ) {
-    super(getResource(param), getLocaleFunc(param, getLocale), getLoadingFunc(param, loading))
-    this.ui = getUIService(param, uis)
-    this.showError = getErrorFunc(param, showError)
-    this.showMessage = getMsgFunc(param, showMessage)
-    this.confirm = getConfirmFunc(param, confirm)
+    // super(resource, getLocaleFunc(param, getLocale), getLoadingFunc(param, loading))
+    // this.ui = getUIService(param, uis)
+    // this.showError = getErrorFunc(param, showError)
+    // this.showMessage = getMsgFunc(param, showMessage)
+    // this.confirm = getConfirmFunc(param, confirm)
+    this.back = this.back.bind(this)
     /*
     this.status = getEditStatusFunc(param, status);
     if (!this.status) {
@@ -260,8 +180,8 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     if (backOnSaveSuccess === false) {
       this.backOnSuccess = backOnSaveSuccess
     }
-    this.insertSuccessMsg = this.resourceService.value("msg_save_success")
-    this.updateSuccessMsg = this.resourceService.value("msg_save_success")
+    this.insertSuccessMsg = this.resource.msg_save_success
+    this.updateSuccessMsg = this.resource.msg_save_success
 
     this.getModelName = this.getModelName.bind(this)
     const n = this.getModelName()
@@ -278,7 +198,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.create = this.create.bind(this)
     this.save = this.save.bind(this)
     this.onSave = this.onSave.bind(this)
-    this.confirm = this.confirm.bind(this)
+    // this.confirm = this.confirm.bind(this)
     this.validate = this.validate.bind(this)
     this.doSave = this.doSave.bind(this)
     this.succeed = this.succeed.bind(this)
@@ -287,12 +207,30 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     this.handleDuplicateKey = this.handleDuplicateKey.bind(this)
     // this.addable = true;
   }
+  protected running?: boolean
+  protected form?: HTMLFormElement
+  protected includeCurrencySymbol?: boolean
+
+  currencySymbol(): boolean | undefined {
+    return this.includeCurrencySymbol
+  }
+
+  getCurrencyCode(): string | undefined {
+    if (this.form) {
+      const x = this.form.getAttribute("currency-code")
+      if (x) {
+        return x
+      }
+    }
+    return undefined
+  }
+
   protected name?: string
   // protected status: EditStatusConfig;
-  protected showMessage: (msg: string, option?: string) => void
-  protected showError: (m: string, callback?: () => void, header?: string) => void
-  protected confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
-  protected ui?: UIService
+  // protected showMessage: (msg: string, option?: string) => void
+  // protected showError: (m: string, callback?: () => void, header?: string) => void
+  // protected confirm: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void
+  // protected ui?: UIService
   protected metadata?: Attributes
   protected metamodel?: MetaModel
   protected keys?: string[]
@@ -310,6 +248,10 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
 
   insertSuccessMsg: string
   updateSuccessMsg: string
+  back(): void {
+    window.history.back()
+  }
+
   load(_id: ID | null | undefined, callback?: (m: T, showM: (m2: T) => void) => void) {
     const id: any = _id
     if (id && id !== "") {
@@ -338,8 +280,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
           if (data && data.status === 404) {
             com.handleNotFound(com.form)
           } else {
-            const resource = this.resourceService.resource()
-            error(err, resource, com.showError)
+            error(err, this.resource, com.showError)
           }
           com.running = false
           hideLoading(com.loading)
@@ -365,8 +306,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     if (this.form) {
       setReadOnly(form)
     }
-    const resource = this.resourceService.resource()
-    this.showError(resource.error_not_found, undefined, resource.error)
+    this.showError(this.resource.error_not_found, undefined, this.resource.error)
   }
   protected formatModel(obj: T): void {
     if (this.metamodel) {
@@ -450,41 +390,39 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
   }
 
   onSave(isBack?: boolean) {
-    const r = this.resourceService
     if (this.running) {
       return
     }
     const com = this
     const obj = com.getModel()
-    const resource = this.resourceService.resource()
     if (!this.newMode) {
       const diffObj = makeDiff(this.orginalModel, obj, this.keys, this.version)
       const l = Object.keys(diffObj as any).length
       if (l === 0) {
-        this.showMessage(resource.msg_no_change)
+        this.showMessage(this.resource.msg_no_change)
       } else {
         com.validate(obj, () => {
           this.confirm(
-            resource.msg_confirm_save,
+            this.resource.msg_confirm_save,
             () => {
               com.doSave(obj, diffObj, isBack)
             },
-            resource.confirm,
-            resource.no,
-            resource.yes,
+            this.resource.confirm,
+            this.resource.no,
+            this.resource.yes,
           )
         })
       }
     } else {
       com.validate(obj, () => {
         this.confirm(
-          resource.msg_confirm_save,
+          this.resource.msg_confirm_save,
           () => {
             com.doSave(obj, obj, isBack)
           },
-          resource.confirm,
-          resource.no,
-          resource.yes,
+          this.resource.confirm,
+          this.resource.no,
+          this.resource.yes,
         )
       })
     }
@@ -523,8 +461,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         hideLoading(com.loading)
       })
       .then((err) => {
-        const resource = this.resourceService.resource()
-        error(err, resource, com.showError)
+        error(err, this.resource, com.showError)
         com.running = false
         hideLoading(com.loading)
       })
@@ -564,7 +501,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         }
       }
     } else {
-      const t = this.resourceService.value("error")
+      const t = this.resource.error
       if (result.length > 0) {
         this.showError(result[0].field + " " + result[0].code + " " + result[0].message)
       } else {
@@ -579,7 +516,6 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     const newMod = this.newMode
     const successMsg = newMod ? this.insertSuccessMsg : this.updateSuccessMsg
     const x: any = res
-    const r = this.resourceService
     if (Array.isArray(x)) {
       this.fail(x)
     } else if (!isNaN(x)) {
@@ -591,7 +527,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
         } else if (!newMod && x === 0) {
           this.handleNotFound()
         } else {
-          this.showError(r.value("error_version"))
+          this.showError(this.resource.error_version)
         }
       }
     } else {
@@ -609,8 +545,7 @@ export class BaseEditComponent<T, ID> extends BaseComponent {
     }
   }
   protected handleDuplicateKey(result?: T): void {
-    const resource = this.resourceService.resource()
-    this.showError(resource.error_duplicate_key, undefined, resource.error)
+    this.showError(this.resource.error_duplicate_key, undefined, this.resource.error)
   }
 }
 export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
@@ -618,18 +553,25 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
     protected viewContainerRef: ViewContainerRef,
     protected route: ActivatedRoute,
     service: GenericService<T, ID, number | T | ErrorMessage[]>,
-    param: ResourceService | EditParameter,
-    showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, callback?: () => void, header?: string) => void,
-    confirm?: (m2: string, yesCallback?: () => void, header?: string, btnLeftText?: string, btnRightText?: string, noCallback?: () => void) => void,
-    getLocale?: (profile?: string) => Locale,
-    uis?: UIService,
-    loading?: LoadingService,
+    resource: StringMap,
+    param: EditParameter,
     patchable?: boolean,
     ignoreDate?: boolean,
     backOnSaveSuccess?: boolean,
   ) {
-    super(service, param, showMessage, showError, confirm, getLocale, uis, loading, patchable, ignoreDate, backOnSaveSuccess)
+    super(
+      service,
+      resource,
+      param.showMessage,
+      param.showError,
+      param.confirm,
+      param.getLocale,
+      param.ui,
+      param.loading,
+      patchable,
+      ignoreDate,
+      backOnSaveSuccess,
+    )
     this.onInit = this.onInit.bind(this)
   }
   onInit() {
@@ -641,7 +583,6 @@ export class EditComponent<T, ID> extends BaseEditComponent<T, ID> {
 }
 
 export interface SearchParameter {
-  resource: ResourceService
   showMessage: (msg: string, option?: string) => void
   showError: (m: string, callback?: () => void, h?: string) => void
   ui?: UIService
@@ -702,31 +643,10 @@ export function handleAppend<T>(com: Pagination, list: T[], limit?: number, next
     com.appendable = false
   }
 }
-export function formatResults<T>(
-  results: T[],
-  pageIndex?: number,
-  pageSize?: number,
-  initPageSize?: number,
-  sequenceNo?: string,
-  ft?: (oj: T, lc?: Locale) => T,
-  lc?: Locale,
-): void {
+export function formatResults<T>(results: T[], pageIndex?: number, pageSize?: number, initPageSize?: number, sequenceNo?: string): void {
   if (results && results.length > 0) {
     let hasSequencePro = false
-    if (ft) {
-      if (sequenceNo && sequenceNo.length > 0) {
-        for (const obj of results) {
-          if ((obj as any)[sequenceNo]) {
-            hasSequencePro = true
-          }
-          ft(obj, lc)
-        }
-      } else {
-        for (const obj of results) {
-          ft(obj, lc)
-        }
-      }
-    } else if (sequenceNo && sequenceNo.length > 0) {
+    if (sequenceNo && sequenceNo.length > 0) {
       for (const obj of results) {
         if ((obj as any)[sequenceNo]) {
           hasSequencePro = true
@@ -775,17 +695,16 @@ export function changePage(com: Pagination, pageIndex: number, pageSize: number)
   com.limit = pageSize
   com.append = false
 }
-export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
+export class BaseSearchComponent<T, S extends Filter> {
   constructor(
     sv: ((s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>) | SearchService<T, S>,
-    param: ResourceService | SearchParameter,
-    showMessage?: (msg: string, option?: string) => void,
-    showError?: (m: string, callback?: () => void, header?: string) => void,
-    getLocale?: (profile?: string) => Locale,
-    uis?: UIService,
-    loading?: LoadingService,
+    public resource: StringMap,
+    protected showMessage: (msg: string, option?: string) => void,
+    public showError: (m: string, callback?: () => void, header?: string) => void,
+    protected getLocale?: (profile?: string) => Locale,
+    protected ui?: UIService,
+    protected loading?: LoadingService,
   ) {
-    super(getResource(param), getLocaleFunc(param, getLocale), getLoadingFunc(param, loading))
     this.filter = {} as any
 
     if (sv) {
@@ -799,9 +718,6 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
         }
       }
     }
-    this.ui = getUIService(param, uis)
-    this.showError = getErrorFunc(param, showError)
-    this.showMessage = getMsgFunc(param, showMessage)
 
     this.toggleFilter = this.toggleFilter.bind(this)
     this.mergeFilter = this.mergeFilter.bind(this)
@@ -827,15 +743,15 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     this.sort = this.sort.bind(this)
     this.showMore = this.showMore.bind(this)
     this.pageChanged = this.pageChanged.bind(this)
-    const rs = this.resourceService
-    this.deleteHeader = rs.value("msg_delete_header")
-    this.deleteConfirm = rs.value("msg_delete_confirm")
-    this.deleteFailed = rs.value("msg_delete_failed")
+
+    this.deleteHeader = this.resource.msg_delete_header
+    this.deleteConfirm = this.resource.msg_delete_confirm
+    this.deleteFailed = this.resource.msg_delete_failed
     this.pageChanged = this.pageChanged.bind(this)
   }
-  protected showMessage: (msg: string, option?: string) => void
-  protected showError: (m: string, callback?: () => void, header?: string) => void
-  protected ui?: UIService
+  protected running?: boolean
+  protected form?: HTMLFormElement
+
   protected searchFn?: (s: S, limit?: number, offset?: number | string, fields?: string[]) => Promise<SearchResult<T>>
   // protected service: SearchService<T, S>;
   // Pagination
@@ -856,7 +772,6 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   sortTarget?: HTMLElement // HTML element
 
   keys?: string[]
-  format?: (obj: T, locale?: Locale) => T
   fields?: string[]
   initFields?: boolean
   sequenceNo = "sequenceNo"
@@ -897,7 +812,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     const s = mergeFilter(obj, b, this.limits, arrs)
     return s
   }
-  load(s: S, autoSearch: boolean): void {
+  load(s: S, autoSearch?: boolean): void {
     this.loadTime = new Date()
     const obj2 = initFilter(s, this)
     this.loadPage = this.page
@@ -925,13 +840,6 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
   }
 
   getFilter(): S {
-    let locale: Locale | undefined
-    if (this.getLocale) {
-      locale = this.getLocale()
-    }
-    if (!locale) {
-      locale = enLocale
-    }
     let obj = this.filter
     const obj3 = optimizeFilter(obj, this, this.getFields())
     /*
@@ -1047,8 +955,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
           hideLoading(com.loading)
         })
         .catch((err) => {
-          const resource = this.resourceService.resource()
-          error(err, resource, com.showError)
+          error(err, this.resource, com.showError)
           com.running = false
           hideLoading(com.loading)
         })
@@ -1074,18 +981,13 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
     if (this.tmpPage) {
       this.page = this.tmpPage
     }
-    const resource = this.resourceService.resource()
-    error(response, resource, this.showError)
+    error(response, this.resource, this.showError)
   }
   showResults(s: S, sr: SearchResult<T>): void {
     const com = this
     const results = sr.list
     if (results != null && results.length > 0) {
-      let locale: Locale = enLocale
-      if (this.getLocale) {
-        locale = this.getLocale()
-      }
-      formatResults(results, this.page, this.limit, this.initPageSize, this.sequenceNo, this.format, locale)
+      formatResults(results, this.page, this.limit, this.initPageSize, this.sequenceNo)
     }
     const appendMode = com.appendMode
     com.page = s.page && s.page >= 1 ? s.page : 1
@@ -1106,7 +1008,7 @@ export class BaseSearchComponent<T, S extends Filter> extends BaseComponent {
       com.setList(results)
       com.tmpPage = s.page
       if (s.limit) {
-        this.showMessage(buildMessage(this.resourceService.resource(), s.page, s.limit, sr.list, sr.total))
+        this.showMessage(buildMessage(this.resource, s.page, s.limit, sr.list, sr.total))
       }
     }
     this.running = false
@@ -1176,18 +1078,19 @@ export class SearchComponent<T, S extends Filter> extends BaseSearchComponent<T,
   constructor(
     protected viewContainerRef: ViewContainerRef,
     sv: ((s: S, ctx?: any) => Promise<SearchResult<T>>) | SearchService<T, S>,
-    param: ResourceService | SearchParameter,
+    resource: StringMap,
+    param: SearchParameter,
     showMessage?: (msg: string, option?: string) => void,
     showError?: (m: string, callback?: () => void, header?: string) => void,
     getLocale?: (profile?: string) => Locale,
     uis?: UIService,
     loading?: LoadingService,
   ) {
-    super(sv, param, showMessage, showError, getLocale, uis, loading)
-    this.autoSearch = getAutoSearch(param)
+    super(sv, resource, param.showMessage, param.showError, param.getLocale, param.ui, param.loading)
+    this.autoSearch = param.auto
     this.onInit = this.onInit.bind(this)
   }
-  protected autoSearch = true
+  protected autoSearch?: boolean = true
   onInit() {
     const fi = this.ui ? this.ui.registerEvents : undefined
     this.form = initElement(this.viewContainerRef, fi)

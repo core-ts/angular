@@ -1,10 +1,10 @@
+export interface Headers {
+  [key: string]: any
+}
 export interface Currency {
   currencyCode: string
   decimalDigits: number
   currencySymbol: string
-}
-export interface Headers {
-  [key: string]: any
 }
 export interface LoadingService {
   showLoading(firstTime?: boolean): void
@@ -48,11 +48,6 @@ export class resources {
 export interface StringMap {
   [key: string]: string
 }
-export interface ResourceService {
-  resource(): StringMap
-  value(key: string, param?: any): string
-}
-
 export interface Locale {
   id?: string
   countryCode: string
