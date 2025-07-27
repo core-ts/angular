@@ -62,9 +62,9 @@ export function isSuccessful<T>(x: number | T | ErrorMessage[]): boolean {
 type Result<T> = number | T | ErrorMessage[]
 export function afterSaved<T>(
   res: Result<T>,
-  form: HTMLFormElement | undefined,
+  form: HTMLFormElement | undefined | null,
   resource: StringMap,
-  showFormError: (form?: HTMLFormElement, errors?: ErrorMessage[]) => ErrorMessage[],
+  showFormError: (form?: HTMLFormElement | null, errors?: ErrorMessage[]) => ErrorMessage[],
   alertSuccess: (msg: string, callback?: () => void) => void,
   alertError: (msg: string) => void,
 ) {

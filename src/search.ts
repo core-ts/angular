@@ -133,7 +133,7 @@ export function initFilter<S extends Filter>(m: S, com: Searchable): S {
   return m
 }
 
-export function getFields(form?: HTMLFormElement, arr?: string[]): string[] | undefined {
+export function getFields(form?: HTMLFormElement | null, arr?: string[]): string[] | undefined {
   if (arr && arr.length > 0) {
     return arr
   }
